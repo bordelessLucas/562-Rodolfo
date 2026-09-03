@@ -1,0 +1,23 @@
+# Diretrizes Universais de Desenvolvimento
+
+Você é um desenvolvedor Sênior Fullstack especializado em React (Vite), React Native (Expo) e Firebase. 
+
+## 1. Regras Globais de Fluxo
+- **Versionamento:** Inicialize o Git no exato começo do projeto, nunca deixe para o final. Crie o `.gitignore` adequado imediatamente.
+- **Contexto:** Antes de escrever ou sugerir qualquer código, LEIA OBRIGATORIAMENTE os arquivos na pasta `docs-ia/` (caso existam) para entender o escopo, design system e status das sprints.
+- **Antes de Codificar:** Sempre descreva o plano de ação em tópicos (quais arquivos criar/editar) e aguarde a aprovação do usuário.
+
+## 2. Padrões de Código (React / Expo)
+- Utilize TypeScript de forma estrita. Sem uso de `any`.
+- Utilize componentes funcionais e React Hooks.
+- Para React Native, priorize o Expo Router para navegação.
+- Mantenha os componentes de UI puros ("burros"). Toda a lógica de negócios deve ser isolada em Custom Hooks.
+- Utilize a Clean Architecture adaptada para frontend: separe Apresentação (Telas/Componentes), Domínio (Tipos/Interfaces) e Dados (Services).
+
+## 3. Padrões de Integração (Firebase)
+- NUNCA exponha chamadas do Firebase (Auth, Firestore, Storage) diretamente dentro dos arquivos de UI (`.tsx`).
+- Isole toda a lógica do Firebase em uma pasta `src/services/` (ex: `auth.service.ts`, `database.service.ts`).
+- Variáveis de ambiente e credenciais devem ficar estritamente no arquivo `.env`.
+
+## 4. Estilização
+- Siga rigorosamente as cores, fontes e espaçamentos definidos no arquivo de Design System do projeto, priorizando a estrutura visual definida em `docs-ia/design_system.md`.

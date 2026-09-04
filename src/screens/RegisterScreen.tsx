@@ -2,10 +2,18 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Button, Container, Input, Typography } from '@/src/components';
+import {
+  Button,
+  Container,
+  InlineMessage,
+  Input,
+  SelectableChip,
+  SelectableChipGroup,
+  Typography,
+} from '@/src/components';
 import type { UserRole } from '@/src/domain/user';
 import { useAuth } from '@/src/hooks/useAuth';
-import { colors, radius, space } from '@/src/theme';
+import { colors, space } from '@/src/theme';
 
 export function RegisterScreen() {
   const router = useRouter();
@@ -50,7 +58,7 @@ export function RegisterScreen() {
         password,
         role,
       });
-      router.replace('/home');
+      router.replace('/');
     } catch (error) {
       setFormError(
         error instanceof Error
@@ -62,10 +70,6 @@ export function RegisterScreen() {
     }
   };
 
-  const handleBackToLogin = () => {
-    router.back();
-  };
-
   return (
     <Container scroll keyboardAvoiding contentStyle={styles.content}>
       <View style={styles.header}>
@@ -73,25 +77,27 @@ export function RegisterScreen() {
           Criar conta
         </Typography>
         <Typography variant="body" color={colors.textMuted}>
-          Cadastre-se como paciente ou profissional de saúde para acessar a
-          plataforma de lipedema.
+          Escolha seu perfil e preencha os dados para acessar a plataforma de
+          lipedema.
         </Typography>
       </View>
 
       <View style={styles.form}>
         <Typography variant="label">Perfil</Typography>
-        <View style={styles.roleRow}>
-          <RoleChip
+        <SelectableChipGroup>
+          <SelectableChip
             label="Paciente"
             selected={role === 'paciente'}
             onPress={() => setRole('paciente')}
+            disabled={loading}
           />
-          <RoleChip
+          <SelectableChip
             label="Profissional de saúde"
             selected={role === 'profissional'}
             onPress={() => setRole('profissional')}
+            disabled={loading}
           />
-        </View>
+        </SelectableChipGroup>
 
         <Input
           label="Nome completo"
@@ -140,9 +146,7 @@ export function RegisterScreen() {
         />
 
         {formError ? (
-          <Typography variant="caption" color={colors.error}>
-            {formError}
-          </Typography>
+          <InlineMessage message={formError} variant="error" />
         ) : null}
 
         <Button
@@ -152,7 +156,12 @@ export function RegisterScreen() {
           style={styles.submit}
         />
 
-        <Pressable accessibilityRole="link" onPress={handleBackToLogin}>
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => router.back()}
+          hitSlop={8}
+          style={styles.loginLink}
+        >
           <Typography variant="body" color={colors.primary} align="center">
             Já tenho conta — Entrar
           </Typography>
@@ -162,63 +171,22 @@ export function RegisterScreen() {
   );
 }
 
-type RoleChipProps = {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-};
-
-function RoleChip({ label, selected, onPress }: RoleChipProps) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
-    >
-      <Typography
-        variant="label"
-        color={selected ? colors.textOnPrimary : colors.text}
-        align="center"
-      >
-        {label}
-      </Typography>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   content: {
     gap: space[6],
   },
   header: {
-    gap: space[2],
+    gap: space[3],
     paddingTop: space[2],
   },
   form: {
     gap: space[4],
   },
-  roleRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space[2],
-    marginBottom: space[1],
-  },
-  chip: {
-    flexGrow: 1,
-    minWidth: '46%',
-    paddingVertical: space[3],
-    paddingHorizontal: space[4],
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  chipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
   submit: {
     marginTop: space[2],
+  },
+  loginLink: {
+    minHeight: 44,
+    justifyContent: 'center',
   },
 });

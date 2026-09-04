@@ -2,6 +2,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users/{userId}
+    //   uid, name, email, role ('paciente'|'profissional'), createdAt, updatedAt
+    //
+    // Collection: dailyCheckins/{userId}_{date}
+    //   userId, date, treatments, activities, lifestyle, supplements,
+    //   medications, wellbeing, measurements, notes, createdAt, updatedAt
+    //
+    // Collection: professionalPatientLinks
+    //   Pending ID: pending_{professionalId}_{patientEmail}
+    //   Active ID:  {professionalId}_{patientId}
+    //   Fields:
+    //     professionalId: string
+    //     patientId: string | null
+    //     patientEmail: string (lowercase)
+    //     status: pending|active|rejected|revoked
+    //     createdAt, updatedAt, acceptedAt, revokedAt, revokedBy
+    // ===============================================================
+
     function isSignedIn() {
       return request.auth != null;
     }
@@ -14,8 +36,156 @@ service cloud.firestore {
       return role in ['paciente', 'profissional'];
     }
 
+    function userDoc(userId) {
+      return get(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function signedInRole() {
+      return userDoc(request.auth.uid).data.role;
+    }
+
+    function isProfessionalUser() {
+      return isSignedIn() && signedInRole() == 'profissional';
+    }
+
+    function isPatientUser() {
+      return isSignedIn() && signedInRole() == 'paciente';
+    }
+
+    function authEmail() {
+      return request.auth.token.email is string
+        ? request.auth.token.email.lower()
+        : '';
+    }
+
+    function activeLinkDoc(professionalId, patientId) {
+      return get(/databases/$(database)/documents/professionalPatientLinks/$(professionalId + '_' + patientId));
+    }
+
+    function activeLinkExists(professionalId, patientId) {
+      return exists(/databases/$(database)/documents/professionalPatientLinks/$(professionalId + '_' + patientId));
+    }
+
+    function hasActiveLinkWithPatient(patientId) {
+      return isSignedIn()
+        && activeLinkExists(request.auth.uid, patientId)
+        && activeLinkDoc(request.auth.uid, patientId).data.status == 'active'
+        && activeLinkDoc(request.auth.uid, patientId).data.professionalId == request.auth.uid
+        && activeLinkDoc(request.auth.uid, patientId).data.patientId == patientId;
+    }
+
+    function pendingLinkPath(professionalId, email) {
+      return /databases/$(database)/documents/professionalPatientLinks/$('pending_' + professionalId + '_' + email);
+    }
+
+    function hasPendingInviteForAccept(professionalId) {
+      return authEmail().size() > 0
+        && exists(pendingLinkPath(professionalId, authEmail()))
+        && get(pendingLinkPath(professionalId, authEmail())).data.status == 'pending'
+        && get(pendingLinkPath(professionalId, authEmail())).data.professionalId == professionalId
+        && get(pendingLinkPath(professionalId, authEmail())).data.patientEmail == authEmail();
+    }
+
+    function linkRequiredKeys() {
+      return [
+        'professionalId', 'patientId', 'patientEmail', 'status',
+        'createdAt', 'updatedAt', 'acceptedAt', 'revokedAt', 'revokedBy'
+      ];
+    }
+
+    function isValidPendingCreate(docId) {
+      return isProfessionalUser()
+        && request.resource.data.professionalId == request.auth.uid
+        && request.resource.data.patientId == null
+        && request.resource.data.patientEmail is string
+        && request.resource.data.patientEmail == request.resource.data.patientEmail.lower()
+        && request.resource.data.patientEmail.size() > 3
+        && request.resource.data.status == 'pending'
+        && request.resource.data.acceptedAt == null
+        && request.resource.data.revokedAt == null
+        && request.resource.data.revokedBy == null
+        && request.resource.data.keys().hasAll(linkRequiredKeys())
+        && docId == 'pending_' + request.auth.uid + '_' + request.resource.data.patientEmail;
+    }
+
+    function isValidActiveCreateByPatient(docId) {
+      return isPatientUser()
+        && request.resource.data.patientId == request.auth.uid
+        && request.resource.data.professionalId is string
+        && request.resource.data.patientEmail == authEmail()
+        && request.resource.data.status == 'active'
+        && request.resource.data.revokedAt == null
+        && request.resource.data.revokedBy == null
+        && request.resource.data.keys().hasAll(linkRequiredKeys())
+        && docId == request.resource.data.professionalId + '_' + request.auth.uid
+        && hasPendingInviteForAccept(request.resource.data.professionalId);
+    }
+
+    function linkImmutableCore() {
+      return request.resource.data.professionalId == resource.data.professionalId
+        && request.resource.data.patientEmail == resource.data.patientEmail;
+    }
+
+    function isPatientRejectUpdate() {
+      return isPatientUser()
+        && resource.data.status == 'pending'
+        && resource.data.patientEmail == authEmail()
+        && request.resource.data.status == 'rejected'
+        && request.resource.data.patientId == request.auth.uid
+        && linkImmutableCore()
+        && request.resource.data.keys().hasAll(linkRequiredKeys());
+    }
+
+    function isProfessionalCancelPending() {
+      return isProfessionalUser()
+        && resource.data.status == 'pending'
+        && resource.data.professionalId == request.auth.uid
+        && request.resource.data.status == 'revoked'
+        && request.resource.data.revokedBy == 'profissional'
+        && linkImmutableCore()
+        && request.resource.data.patientId == resource.data.patientId
+        && request.resource.data.keys().hasAll(linkRequiredKeys());
+    }
+
+    function isRevokeActiveUpdate() {
+      return resource.data.status == 'active'
+        && request.resource.data.status == 'revoked'
+        && request.resource.data.revokedBy in ['profissional', 'paciente']
+        && linkImmutableCore()
+        && request.resource.data.patientId == resource.data.patientId
+        && (
+          (isProfessionalUser()
+            && resource.data.professionalId == request.auth.uid
+            && request.resource.data.revokedBy == 'profissional')
+          || (isPatientUser()
+            && resource.data.patientId == request.auth.uid
+            && request.resource.data.revokedBy == 'paciente')
+        )
+        && request.resource.data.keys().hasAll(linkRequiredKeys());
+    }
+
+    function canReadLink() {
+      return isSignedIn() && (
+        resource.data.professionalId == request.auth.uid
+        || resource.data.patientId == request.auth.uid
+        || (resource.data.status == 'pending'
+          && resource.data.patientEmail == authEmail())
+      );
+    }
+
+    function canDeleteLink() {
+      return resource.data.status == 'pending' && (
+        (isProfessionalUser() && resource.data.professionalId == request.auth.uid)
+        || (isPatientUser() && resource.data.patientEmail == authEmail())
+      ) || (
+        isProfessionalUser()
+        && resource.data.professionalId == request.auth.uid
+        && resource.data.status in ['rejected', 'revoked']
+      );
+    }
+
     match /users/{userId} {
-      allow read: if isOwner(userId);
+      allow read: if isOwner(userId) || hasActiveLinkWithPatient(userId);
 
       allow create: if isOwner(userId)
         && request.resource.data.uid == userId
@@ -23,15 +193,54 @@ service cloud.firestore {
         && request.resource.data.name is string
         && isValidRole(request.resource.data.role)
         && request.resource.data.keys().hasAll([
-          'uid', 'name', 'email', 'role', 'createdAt'
+          'uid', 'name', 'email', 'role', 'createdAt', 'updatedAt'
         ]);
 
       allow update: if isOwner(userId)
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
-        && request.resource.data.role == resource.data.role;
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0;
 
       allow delete: if false;
+    }
+
+    match /dailyCheckins/{checkinId} {
+      allow read: if isSignedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || hasActiveLinkWithPatient(resource.data.userId)
+        );
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.date is string
+        && request.resource.data.keys().hasAll([
+          'userId', 'date', 'treatments', 'activities', 'lifestyle',
+          'supplements', 'medications', 'wellbeing', 'measurements',
+          'notes', 'createdAt', 'updatedAt'
+        ]);
+
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.date == resource.data.date;
+
+      allow delete: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    match /professionalPatientLinks/{linkId} {
+      allow read: if canReadLink();
+
+      allow create: if isValidPendingCreate(linkId) || isValidActiveCreateByPatient(linkId);
+
+      allow update: if isPatientRejectUpdate()
+        || isProfessionalCancelPending()
+        || isRevokeActiveUpdate();
+
+      allow delete: if canDeleteLink();
     }
 
     match /{document=**} {

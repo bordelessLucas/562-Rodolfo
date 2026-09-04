@@ -1,18 +1,23 @@
 # Escopo do Projeto — Aplicativo para Lipedema
 
-> Documento vivo. Separar sempre: **confirmado** vs **pendente de validação com o cliente**.  
-> Não implementar funcionalidades presumidas sem confirmação.
+> Documento vivo. Separar sempre: **confirmado** vs **pendente de detalhamento**.  
+> Não implementar funcionalidades sem aprovação da etapa correspondente.
+
+**Última atualização:** 04/09/2026 — escopo completo do cliente (comunidade, cursos, vídeos, diagnóstico, monetização do diário, profissionais de saúde amplos).
 
 ---
 
 ## Objetivo principal
 
-Criar um aplicativo mobile especializado em **lipedema**, concentrando conteúdos, acompanhamento e ferramentas relacionadas em um único ecossistema digital, atendendo:
+Criar um aplicativo mobile especializado em **lipedema** que una, em um único ecossistema:
 
-- **Pacientes**
-- **Médicos / profissionais de saúde**
+1. **Acompanhamento do paciente** (diário/check-in, histórico, tendências, insights)
+2. **Conteúdo educativo** (vídeos, biblioteca, cursos e mentoria)
+3. **Diagnóstico inicial** (questionário de sinais/sintomas → avaliação orientativa)
+4. **Comunidade** (posts e comentários entre pacientes)
+5. **Área para profissionais de saúde** que trabalham com lipedema (**não restrito a médicos**)
 
-Stack atual: **React Native (Expo SDK 54) + Firebase**.
+Stack atual: **React Native (Expo SDK 54) + Firebase (Auth + Firestore)**.
 
 ---
 
@@ -20,87 +25,247 @@ Stack atual: **React Native (Expo SDK 54) + Firebase**.
 
 | Perfil | Status | Descrição |
 |--------|--------|-----------|
-| **Paciente** | Confirmado | Usa o app para cadastro, ficha de diagnóstico e Diário de Lipedema. |
-| **Médico / profissional de saúde** | Confirmado (existência do perfil) | Experiência dedicada; **funcionalidades específicas ainda não detalhadas**. |
+| **Paciente** | Confirmado | Conta, diário/check-in, conteúdos/vídeos, diagnóstico inicial, comunidade, perfil. |
+| **Profissional de saúde** | Confirmado | Qualquer profissional que trabalha com lipedema (não apenas médicos). Área dedicada; **detalhes de features ainda a especificar**. |
 
-> Hipóteses (vínculo médico–paciente, visualização do diário, avaliações etc.) **não são requisitos** até validação com o cliente.
-
----
-
-## Regras de negócio (confirmadas / diretrizes)
-
-1. O produto atende **dois públicos**: pacientes e profissionais de saúde.
-2. O módulo central inicial do paciente é o **Diário de Lipedema**.
-3. O paciente deve poder **cadastrar-se / entrar** no sistema.
-4. O paciente deve poder preencher uma **ficha de diagnóstico**.
-5. O paciente deve poder **registrar e acompanhar** informações relacionadas ao lipedema no diário.
-6. O cliente já possui / desenvolve produtos externos (mentoria, curso online, conteúdos, Diário) que **poderão** integrar-se ao app no futuro — forma de integração **não definida**.
-7. **Não implementar** funcionalidades presumidas sem confirmação do cliente.
-8. Novos requisitos devem ser incorporados separando: confirmados, regras, perfis, funcionalidades, integrações, dados a armazenar, pendências e ideias a validar.
+> Acesso **individualizado** conforme o perfil após autenticação.
 
 ---
 
-## Funcionalidades core (confirmadas no escopo inicial)
+## 1. Estrutura inicial da plataforma (confirmado)
 
-### Área do paciente
-- Cadastro / autenticação do paciente
-- Preenchimento de **ficha de diagnóstico**
-- **Diário de Lipedema**: registro e acompanhamento de informações relacionadas à condição
-- Estrutura completa dos campos do diário: **pendente de levantamento**
-
-### Área médica
-- Existência de experiência / área destinada a médicos/profissionais
-- Funcionalidades específicas: **pendentes de detalhamento**
-
-### Conteúdo educacional / produtos digitais
-- Mentoria, cursos online e materiais relacionados existem no contexto do cliente
-- Papel do app (hospedar, linkar, integrar plataforma externa, controle de compra): **não definido**
+| Item | Status | Notas |
+|------|--------|-------|
+| Acesso inicial ao aplicativo | Confirmado / parcial na app | Login, sessão, AuthGate |
+| Identificação do perfil de acesso | Confirmado / parcial | `role`: `paciente` \| `profissional` |
+| Área para profissionais de saúde | Confirmado (existência) | Features da área: a detalhar |
+| Área para pacientes | Confirmado | Check-in, conteúdos, comunidade, diagnóstico |
+| Navegação principal | Confirmado (conceito) | Navegação por perfil; tabs paciente incluem Check-in, etc. |
+| Estrutura inicial da conta | Confirmado / parcial | `users/{uid}` — expandir com edição e preferências |
 
 ---
 
-## Frentes do produto (visão inicial)
+## 2. Cadastro e perfil (confirmado)
 
-1. **Acompanhamento do paciente** — Diário, ficha de diagnóstico, registros  
-2. **Área médica** — a detalhar  
-3. **Conteúdo educacional** — mentoria, cursos, materiais  
-
----
-
-## Requisitos pendentes de definição (levantamento)
-
-### Diário / paciente
-- [ ] Quais dados exatamente serão registrados no diário
-- [ ] Estrutura completa da ficha de diagnóstico
-- [ ] Frequência, histórico, edições, anexos (imagens etc.)
-
-### Área médica
-- [ ] O que o médico visualiza
-- [ ] Se haverá vínculo médico–paciente
-- [ ] Se o médico acompanha o diário
-- [ ] Se realiza avaliações/diagnósticos no app
-- [ ] Informações clínicas disponíveis e permissões por perfil
-
-### Conteúdo / integrações
-- [ ] Hospedagem in-app vs acesso externo vs integração
-- [ ] Controle de usuários que compraram cursos/mentorias
-- [ ] Relação dos produtos atuais do cliente com o app
-
-### Dados a armazenar
-- [ ] Modelo de dados completo (paciente, ficha, entradas do diário, perfil médico)
-- [ ] Políticas de privacidade / dados de saúde (LGPD e sensíveis)
+| Item | Status | Notas |
+|------|--------|-------|
+| Cadastro de paciente | Confirmado / implementado | Auth + Firestore |
+| Cadastro de profissional de saúde | Confirmado / implementado | Mesmo fluxo, role `profissional` |
+| Dados básicos do perfil | Confirmado / parcial | nome, e-mail, role, createdAt |
+| Edição das informações cadastradas | Confirmado | **A implementar** |
+| Identificação do tipo de usuário | Confirmado / implementado | role |
+| Acesso individualizado conforme perfil | Confirmado | Shells/rotas por perfil **a implementar** |
 
 ---
 
-## Ideias / hipóteses (não confirmadas)
+## 3. Área de cursos e mentoria (confirmado — detalhe a definir)
 
-- Vínculo e acompanhamento clínico médico ↔ paciente via diário
-- Avaliações/diagnósticos feitos pelo profissional no app
-- Integração da mentoria e cursos como módulo nativo ou SSO/plataforma externa
-- Evolução do “Diário de Lipedema” já existente do cliente para dentro do app
+| Item | Status |
+|------|--------|
+| Catálogo inicial de cursos | Confirmado |
+| Área de aulas | Confirmado |
+| Inclusão de vídeos | Confirmado |
+| Organização por módulos | Confirmado |
+| Acesso ao conteúdo conforme usuário | Confirmado |
+| Registro básico de aulas visualizadas | Confirmado |
+
+**Pendências de detalhe:** modelo de hospedagem (in-app vs plataforma externa), quem publica (admin/cliente), paywall do curso vs incluso na assinatura.
 
 ---
 
-## Status do escopo
+## 4. Conteúdos para pacientes — vídeos e educação (confirmado)
 
-**Fase:** levantamento inicial de requisitos.  
-Este documento deve ser atualizado a cada nova transcrição, reunião ou artefato do cliente.
+| Item | Status |
+|------|--------|
+| Biblioteca de vídeos | Confirmado |
+| Conteúdos educativos sobre lipedema | Confirmado |
+| Organização dos conteúdos por tema | Confirmado |
+| Acesso individual aos materiais | Confirmado |
+| Área de orientação e informações gerais | Confirmado |
+| Visualização em formato simplificado (mobile) | Confirmado |
+
+---
+
+## 5. Diagnóstico inicial (confirmado — campos a detalhar)
+
+| Item | Status |
+|------|--------|
+| Questionário para pacientes | Confirmado |
+| Perguntas sobre principais sinais e sintomas | Confirmado |
+| Registro das respostas | Confirmado |
+| Processamento das informações preenchidas | Confirmado |
+| Exibição de uma avaliação inicial | Confirmado |
+| Orientação para buscar avaliação profissional quando aplicável | Confirmado |
+
+**Regras:**
+- Avaliação é **orientativa / inicial**, **não substitui** diagnóstico clínico.
+- Orientar busca a **profissional de saúde** quando aplicável.
+- Perguntas oficiais do questionário: **a validar com o cliente**.
+
+---
+
+## 6. Comunidade (confirmado)
+
+| Item | Status |
+|------|--------|
+| Área de comunidade | Confirmado |
+| Publicações de pacientes | Confirmado |
+| Campo para criação de posts | Confirmado |
+| Comentários nas publicações | Confirmado |
+| Visualização das interações | Confirmado |
+| Estrutura básica de participação entre usuários | Confirmado |
+
+**Objetivo:** pacientes trocarem informações **dentro do próprio app** (postagem + comentário).
+
+**Pendências:** moderação, denúncia, se profissional participa, regras de conteúdo sensível.
+
+---
+
+## 7. Integração e validação (confirmado como princípio)
+
+| Item | Status |
+|------|--------|
+| Integração entre cadastro, conteúdos, diagnóstico e comunidade | Confirmado (arquitetura) |
+| Navegação entre as principais áreas | Confirmado |
+| Ajustes de funcionamento | Contínuo |
+| Validação dos principais fluxos de usuário | Contínuo |
+| Organização para futuras expansões | Confirmado (Clean Arch + docs-ia) |
+| Preparação da base para novos módulos | Confirmado |
+
+---
+
+## 8. Diário / Check-in do paciente (confirmado + monetização)
+
+Funcionalidade central de acompanhamento. Referências visuais do cliente detalham o **Check-in diário**.
+
+### Monetização (confirmado como intenção de negócio)
+- **Monetizar o diário** para o paciente registrar avaliações e acompanhamento.
+- Modelo exato (assinatura, compra única, freemium): **pendente de definição**.
+- Até definir o modelo, implementar a **capacidade técnica** do diário; o gate de pagamento é etapa posterior.
+
+### Check-in diário (UX confirmada)
+
+Registrar por data:
+
+| Seção | Conteúdo |
+|-------|----------|
+| Tratamentos | Multi-seleção + Outros |
+| Atividades | Multi-seleção + Outros |
+| Dieta e estilo de vida | Opções configuráveis + Outros |
+| Suplementos e medicamentos | Multi-seleção + Outros + aviso de segurança |
+| Bem-estar | Escalas 1–10: dor, peso, energia, humor |
+| Medidas corporais | Bilateral + peso; manual + voz (com revisão) |
+| Observações | Texto livre |
+
+**Também confirmados:** navegação por data, histórico, tendências, análise IA como **insights** (não diagnóstico/prescrição), check-in parcial, autosave a definir.
+
+### Navegação paciente (referência)
+```text
+CHECK-IN | HISTÓRICO | TENDÊNCIAS | ANÁLISE IA
+```
+(+ acesso a conteúdos, comunidade, diagnóstico e perfil na estrutura geral do app — IA de navegação final a consolidar no design).
+
+---
+
+## Regras de negócio (consolidadas)
+
+1. Dois públicos: **pacientes** e **profissionais de saúde** (amplos, não só médicos).
+2. Acesso e navegação **por perfil**.
+3. Diário/check-in é o núcleo de acompanhamento do paciente e **será monetizado** (modelo TBD).
+4. Conteúdos e **vídeos** para pacientes fazem parte do produto.
+5. Cursos e mentoria fazem parte do produto (formato de entrega TBD).
+6. Diagnóstico inicial = questionário orientativo, **não** diagnóstico clínico definitivo.
+7. Comunidade = posts + comentários entre pacientes.
+8. Medicamentos/suplementos no diário = **somente registro**; sem recomendação de dose/uso.
+9. IA (quando houver) = insights sobre dados do usuário; **sem** diagnóstico nem prescrição.
+10. Não implementar detalhes inventados (listas oficiais, preços, CMS) sem validação.
+
+---
+
+## Modelo de dados (conceitual — evolução)
+
+```text
+users/{userId}
+  uid, name, email, role, createdAt
+  (+ preferências, units, updatedAt — edição de perfil)
+
+dailyCheckins/{checkinId}
+  userId, date, treatments[], activities[], lifestyle[]
+  supplements[], medications[]
+  wellbeing { pain, heaviness, energy, mood }
+  measurements { ... bilateral, weight }
+  notes, createdAt, updatedAt
+
+# Módulos futuros (estrutura a detalhar na implementação)
+courses / modules / lessons / videos
+contentLibrary / themes
+diagnosticQuestionnaires / responses / results
+communityPosts / comments
+subscriptions / entitlements   # monetização do diário (TBD)
+```
+
+---
+
+## Mapa de cobertura do escopo (cliente × docs)
+
+| Bloco | No escopo? |
+|-------|------------|
+| 1. Estrutura da plataforma | ✅ |
+| 2. Cadastro e perfil | ✅ (edição e shells a implementar) |
+| 3. Cursos e mentoria | ✅ |
+| 4. Conteúdos/vídeos pacientes | ✅ |
+| 5. Diagnóstico inicial | ✅ |
+| 6. Comunidade (post + comentário) | ✅ |
+| 7. Integração e validação | ✅ |
+| Diário/check-in + monetização | ✅ |
+| Profissionais amplos (não só médico) | ✅ |
+
+---
+
+## Ainda pendente de detalhamento (não bloqueia constar no escopo)
+
+- [ ] Modelo de monetização do diário (preço, trial, o que é free)
+- [ ] Campos oficiais do questionário de diagnóstico inicial
+- [ ] Opções oficiais dieta/tratamentos/atividades/suplementos do check-in
+- [ ] Features concretas da área do profissional de saúde
+- [ ] Hospedagem de vídeo (Storage, YouTube, Vimeo, etc.)
+- [ ] Moderação da comunidade
+- [ ] Unidades cm/kg vs in/lbs
+- [ ] Escopo da 1ª versão de insights IA
+- [ ] Políticas LGPD / dados sensíveis
+
+---
+
+## Fora de escopo (até nova confirmação)
+
+- Diagnóstico clínico definitivo ou prescrição pelo app/IA
+- Telemedicina / prontuário eletrônico completo
+- Apple Health / Google Health Connect (salvo pedido futuro)
+- Copiar marca/UI de apps de referência pixel a pixel
+
+---
+
+## Status da implementação (resumo)
+
+| Área | Spec no escopo | Código |
+|------|----------------|--------|
+| Auth / cadastro / role | ✅ | ✅ |
+| Edição de perfil / shells por perfil | ✅ | ✅ |
+| Check-in / diário (MVP) | ✅ | ✅ |
+| Monetização diário | ✅ (intenção) | ❌ |
+| Cursos / mentoria / vídeos | ✅ | ❌ |
+| Diagnóstico inicial | ✅ | ❌ |
+| Comunidade | ✅ | ❌ |
+| Área profissional | ✅ (existência; features extras TBD) | 🟡 vínculo back ✅ · UI ❌ |
+
+Detalhes de andamento: `andamento.md` · Sprints: `checklist_sprints.md` · **Roadmap de fases:** `plano_roadmap.md` · Plano auth concluído: `plano_fase_atual.md` · Backend profissional: `plano_profissional_backend.md`.
+
+---
+
+## Status do planejamento
+
+**Roadmap:** `plano_roadmap.md` (R0–R2 ✅ · back profissional vínculo ✅ · R3+ e UI profissional aguardam).  
+**Implementação atual:** Auth + shells + Check-in MVP + Histórico + edição de perfil + services de vínculo profissional.  
+**Firestore:** rules + indexes (`dailyCheckins`, `professionalPatientLinks`) deployados em `rodolfo-39b15`.  
+**Fila imediata (sem mudar escopo):** UI de vínculos profissional/paciente **ou** R3 Diagnóstico após aprovação.  
+**Não inventar:** features extras do profissional, monetização, campos do questionário, hospedagem de vídeo — ver pendências acima.

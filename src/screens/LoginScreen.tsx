@@ -1,9 +1,15 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Button, Container, Input, Typography } from '@/src/components';
+import {
+  Button,
+  Container,
+  InlineMessage,
+  Input,
+  Typography,
+} from '@/src/components';
 import { useAuth } from '@/src/hooks/useAuth';
 import { colors, radius, space } from '@/src/theme';
 
@@ -16,6 +22,7 @@ export function LoginScreen() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
 
@@ -23,6 +30,7 @@ export function LoginScreen() {
     setEmailError('');
     setPasswordError('');
     setFormError('');
+    setSuccessMessage('');
 
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
@@ -37,12 +45,10 @@ export function LoginScreen() {
     setLoading(true);
     try {
       await signIn(trimmedEmail, password);
-      router.replace('/home');
+      router.replace('/');
     } catch (error) {
       setFormError(
-        error instanceof Error
-          ? error.message
-          : 'Não foi possível entrar.',
+        error instanceof Error ? error.message : 'Não foi possível entrar.',
       );
     } finally {
       setLoading(false);
@@ -51,6 +57,7 @@ export function LoginScreen() {
 
   const handleForgotPassword = async () => {
     setFormError('');
+    setSuccessMessage('');
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
       setEmailError('Informe o e-mail para recuperar a senha.');
@@ -60,8 +67,7 @@ export function LoginScreen() {
     setResetLoading(true);
     try {
       await resetPassword(trimmedEmail);
-      Alert.alert(
-        'E-mail enviado',
+      setSuccessMessage(
         'Se existir uma conta com este e-mail, você receberá o link de recuperação.',
       );
     } catch (error) {
@@ -75,10 +81,6 @@ export function LoginScreen() {
     }
   };
 
-  const handleCreateAccount = () => {
-    router.push('/register');
-  };
-
   return (
     <Container scroll keyboardAvoiding contentStyle={styles.content}>
       <LinearGradient
@@ -89,14 +91,22 @@ export function LoginScreen() {
       />
 
       <View style={styles.brandBlock}>
-        <Typography variant="caption" color={colors.secondary} style={styles.eyebrow}>
+        <Typography
+          variant="caption"
+          color={colors.secondary}
+          style={styles.eyebrow}
+        >
           Acompanhamento especializado
         </Typography>
         <Typography variant="display" accessibilityRole="header">
           Lipedema
         </Typography>
-        <Typography variant="body" color={colors.textMuted} style={styles.subtitle}>
-          Entre para acompanhar seu diário e sua jornada de cuidado.
+        <Typography
+          variant="body"
+          color={colors.textMuted}
+          style={styles.subtitle}
+        >
+          Entre para acompanhar seu check-in diário e sua jornada de cuidado.
         </Typography>
       </View>
 
@@ -131,15 +141,17 @@ export function LoginScreen() {
         />
 
         {formError ? (
-          <Typography variant="caption" color={colors.error}>
-            {formError}
-          </Typography>
+          <InlineMessage message={formError} variant="error" />
+        ) : null}
+        {successMessage ? (
+          <InlineMessage message={successMessage} variant="success" />
         ) : null}
 
         <Pressable
           accessibilityRole="link"
           onPress={handleForgotPassword}
-          disabled={resetLoading}
+          disabled={resetLoading || loading}
+          hitSlop={8}
           style={styles.forgotLink}
         >
           <Typography variant="label" color={colors.primary}>
@@ -157,8 +169,8 @@ export function LoginScreen() {
         <Button
           label="Criar conta"
           variant="outline"
-          onPress={handleCreateAccount}
-          disabled={loading}
+          onPress={() => router.push('/register')}
+          disabled={loading || resetLoading}
         />
       </View>
     </Container>
@@ -177,15 +189,17 @@ const styles = StyleSheet.create({
     height: '42%',
   },
   brandBlock: {
-    gap: space[2],
+    gap: space[3],
     zIndex: 1,
+    paddingTop: space[2],
   },
   eyebrow: {
-    letterSpacing: 0.6,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
   subtitle: {
     maxWidth: 320,
+    lineHeight: 24,
   },
   formCard: {
     zIndex: 1,
@@ -201,7 +215,8 @@ const styles = StyleSheet.create({
   },
   forgotLink: {
     alignSelf: 'flex-end',
-    marginTop: -space[1],
+    minHeight: 44,
+    justifyContent: 'center',
   },
   primaryAction: {
     marginTop: space[2],

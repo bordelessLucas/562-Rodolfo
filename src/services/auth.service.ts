@@ -1,6 +1,7 @@
 import {
   User,
   createUserWithEmailAndPassword,
+  deleteUser,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
@@ -13,11 +14,19 @@ export type AuthCredentials = {
   password: string;
 };
 
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
 export async function signIn({
   email,
   password,
 }: AuthCredentials): Promise<User> {
-  const credential = await signInWithEmailAndPassword(auth, email, password);
+  const credential = await signInWithEmailAndPassword(
+    auth,
+    normalizeEmail(email),
+    password,
+  );
   return credential.user;
 }
 
@@ -27,7 +36,7 @@ export async function signUp({
 }: AuthCredentials): Promise<User> {
   const credential = await createUserWithEmailAndPassword(
     auth,
-    email,
+    normalizeEmail(email),
     password,
   );
   return credential.user;
@@ -38,34 +47,49 @@ export async function logOut(): Promise<void> {
 }
 
 export async function resetPassword(email: string): Promise<void> {
-  await sendPasswordResetEmail(auth, email);
+  await sendPasswordResetEmail(auth, normalizeEmail(email));
+}
+
+export async function deleteAuthUser(user: User): Promise<void> {
+  await deleteUser(user);
 }
 
 export function mapAuthError(error: unknown): string {
-  if (typeof error !== 'object' || error === null || !('code' in error)) {
-    return 'Ocorreu um erro inesperado. Tente novamente.';
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const code = String((error as { code: string }).code);
+
+    switch (code) {
+      case 'auth/invalid-email':
+        return 'E-mail inválido.';
+      case 'auth/user-disabled':
+        return 'Esta conta foi desativada.';
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        return 'E-mail ou senha incorretos.';
+      case 'auth/email-already-in-use':
+        return 'Este e-mail já está em uso.';
+      case 'auth/weak-password':
+        return 'A senha deve ter pelo menos 6 caracteres.';
+      case 'auth/too-many-requests':
+        return 'Muitas tentativas. Aguarde e tente novamente.';
+      case 'auth/network-request-failed':
+        return 'Falha de rede. Verifique sua conexão.';
+      case 'auth/requires-recent-login':
+        return 'Por segurança, entre novamente e tente outra vez.';
+      case 'permission-denied':
+      case 'firestore/permission-denied':
+        return 'Sem permissão para salvar seus dados. Tente novamente.';
+      case 'unavailable':
+        return 'Serviço temporariamente indisponível. Tente novamente.';
+      default:
+        break;
+    }
   }
 
-  const code = String((error as { code: string }).code);
-
-  switch (code) {
-    case 'auth/invalid-email':
-      return 'E-mail inválido.';
-    case 'auth/user-disabled':
-      return 'Esta conta foi desativada.';
-    case 'auth/user-not-found':
-    case 'auth/wrong-password':
-    case 'auth/invalid-credential':
-      return 'E-mail ou senha incorretos.';
-    case 'auth/email-already-in-use':
-      return 'Este e-mail já está em uso.';
-    case 'auth/weak-password':
-      return 'A senha deve ter pelo menos 6 caracteres.';
-    case 'auth/too-many-requests':
-      return 'Muitas tentativas. Aguarde e tente novamente.';
-    case 'auth/network-request-failed':
-      return 'Falha de rede. Verifique sua conexão.';
-    default:
-      return 'Não foi possível concluir a autenticação.';
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
   }
+
+  return 'Não foi possível concluir a autenticação.';
 }

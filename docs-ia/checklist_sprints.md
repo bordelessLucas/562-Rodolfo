@@ -1,91 +1,119 @@
 # Checklist de Sprints — Aplicativo para Lipedema
 
-> Sprints lógicas e sequenciais com base no **escopo inicial confirmado**.  
-> Itens dependentes de levantamento do cliente ficam explícitos como validação — **sem presumir regras**.
+> Atualizado em 04/09/2026 — alinhado ao **`plano_roadmap.md`** (fases R0–R10).
 
 ---
 
-## Sprint 0 — Alinhamento e Memory Bank
-- [x] Setup Expo SDK 54 + Firebase (`.env`, `src/services/firebase.ts`)
-- [x] `.cursorrules` e estrutura inicial do repositório
-- [x] Criar `docs-ia/` (`escopo`, `design_system`, `checklist_sprints`)
-- [ ] Validar com o cliente o resumo de sprints (este arquivo)
-- [ ] Agendar levantamento: campos do diário, ficha de diagnóstico, área médica, conteúdo
+## Mapa Sprint ↔ Fase roadmap
+
+| Sprint | Fase | Foco |
+|--------|------|------|
+| 0–2.5 | R0 ✅ | Fundação, auth, polish |
+| 1 (restante) + nav | **R1** | Shells + edição perfil |
+| 3 | R2 | Check-in + histórico |
+| 5 | R3 | Diagnóstico inicial |
+| 6–7 | R4–R5 | Vídeos / cursos |
+| 8 | R6 | Comunidade |
+| 10 | R7 | Monetização diário |
+| 9 | R8 | Profissional de saúde |
+| 4 (+ IA) | R9 | Voz, tendências, insights |
+| 11–12 | R10 | Integração / release |
 
 ---
 
-## Sprint 1 — Autenticação e perfis
-- [x] Definir modelo mínimo de usuário no Firebase Auth + perfil em Firestore (`role`: paciente | profissional)
-- [x] Service de auth isolado em `src/services/` (sem Firebase direto na UI)
-- [x] Fluxos: cadastro, login, logout, recuperação de senha (escopo mínimo)
-- [x] Tela/fluxo de escolha ou atribuição de perfil (conforme regra confirmada pelo cliente)
-- [x] Proteção de rotas (Expo Router) por sessão
-- [x] Regras básicas de segurança Firestore alinhadas aos perfis
-- [ ] Proteção de rotas por perfil (shells paciente vs profissional)
+## Sprint 0 — Fundação
+- [x] Setup Expo SDK 54 + Firebase
+- [x] Memory Bank inicial
+- [x] Escopo completo consolidado em `escopo.md`
+- [x] Roadmap em `plano_roadmap.md`
+- [ ] Validar com o cliente: monetização + campos do questionário + hospedagem de vídeo
 
 ---
 
-## Sprint 2 — UI base e navegação
-- [x] Tokens provisórios + componentes atômicos (`Button`, `Input`, `Typography`, `Container`)
-- [x] Telas Login, Cadastro e Home (mocks, sem Firebase)
-- [x] Navegação expo-router (login / register / home)
-- [ ] Shell completo paciente vs profissional com rotas separadas
-- [ ] Home profissional + Perfil dedicados
-- [ ] Estados vazios / loading / erro padronizados em todas as telas
-- [ ] Incorporar Design System oficial quando o cliente enviar (atualizar `design_system.md`)
+## Sprint 1 — Autenticação e perfis ✅ (parcial)
+- [x] `users/{uid}` + role paciente | profissional
+- [x] Login, cadastro, logout, reset senha
+- [x] AuthContext + rotas por sessão
+- [x] Firestore rules `users`
+- [x] Shells separados por perfil → **Fase R1** ✅
+- [x] Edição de dados cadastrais → **Fase R1** ✅
 
 ---
 
-## Sprint 3 — Paciente: ficha de diagnóstico
-- [ ] Levantar e confirmar com o cliente os campos da ficha
-- [ ] Domínio (tipos/interfaces) da ficha em camada de domínio
-- [ ] Service de persistência da ficha (`src/services/`)
-- [ ] Fluxo de preenchimento / edição / visualização da ficha
-- [ ] Validação de formulário e salvamento vinculado ao paciente autenticado
+## Sprint 2 — UI base + polish Auth ✅
+- [x] Tokens + Button, Input, Typography, Container
+- [x] SelectableChip + InlineMessage
+- [x] Login / Cadastro / Home polidos (Sprint 2.5)
+- [x] SectionCard, WellbeingScale, DateNavigator, ScreenHeader (polish UI)
+- [ ] Navegação principal multi-módulo → R1
+- [ ] Design System oficial do cliente (quando houver brand kit)
 
 ---
 
-## Sprint 4 — Paciente: Diário de Lipedema (MVP)
-- [ ] Levantar e confirmar estrutura das entradas do diário (dados, frequência, anexos)
-- [ ] CRUD mínimo de entradas do diário (criar, listar, detalhar, editar — conforme confirmado)
-- [ ] Service do diário isolado da UI + hooks de negócio
-- [ ] Tela de histórico / acompanhamento das informações registradas
-- [ ] Garantir que apenas o paciente dono acessa seus registros (regras Firestore)
+## Sprint 2.5 — Auth hardening + polish ✅
+- [x] Ver `plano_fase_atual.md`
 
 ---
 
-## Sprint 5 — Área médica (após levantamento)
-- [ ] Validar com o cliente: visualizações, vínculo médico–paciente, permissões
-- [ ] Implementar somente o que for **confirmado** (ex.: lista de pacientes vinculados, leitura do diário, etc.)
-- [ ] Services e regras de acesso específicos do perfil profissional
-- [ ] Atualizar `escopo.md` com requisitos confirmados antes de codar
+## Sprint 3 — Check-in / Diário (MVP) → Fase R2 ✅
+- [x] Domain + `checkin.service` + rules + índice
+- [x] UI Check-in + Histórico
+- [ ] (Depois) gate monetização → R7
 
 ---
 
-## Sprint 6 — Conteúdo educacional / produtos (após definição)
-- [ ] Decidir modelo: hospedar, link externo, integração com plataforma, ou controle de compra
-- [ ] Implementar acesso a mentoria / cursos / materiais **somente** conforme decisão do cliente
-- [ ] Integrações externas (se houver) documentadas em `escopo.md`
-- [ ] Atualizar checklist com subtarefas concretas pós-decisão
+## Sprint 4 — Voz + unidades + tendências → Fase R9
+- [ ] Unidades, speech, gráficos, insights IA
 
 ---
 
-## Sprint 7 — Polimento, privacidade e release interno
-- [ ] Revisão LGPD / dados sensíveis de saúde (consentimento, retenção — com orientação do cliente)
-- [ ] Testes em Expo Go (SDK 54) nos fluxos paciente confirmados
-- [ ] Ajustes de UX com base no Design System oficial
-- [ ] Build de preview / checklist de release interno
-- [ ] Congelar MVP confirmado e listar backlog pós-MVP
+## Sprint 5 — Diagnóstico inicial → Fase R3
+- [ ] Questionário, resultado orientativo, disclaimer
 
 ---
 
-## Fora de escopo até confirmação
+## Sprint 6 — Conteúdos e vídeos → Fase R4
+- [ ] Biblioteca, temas, player, orientação
 
-Não iniciar implementação de:
+---
 
-- Vínculo clínico médico ↔ paciente
-- Avaliação/diagnóstico feito pelo médico no app
-- Player/hospedagem de cursos ou paywall de mentoria
-- Campos “inventados” do diário ou da ficha
+## Sprint 7 — Cursos e mentoria → Fase R5
+- [ ] Catálogo, módulos, aulas, progresso
 
-Enquanto não houver aceite explícito do cliente.
+---
+
+## Sprint 8 — Comunidade → Fase R6
+- [ ] Posts + comentários
+
+---
+
+## Sprint 9 — Área profissional → Fase R8
+- [x] Backend: domain + services de vínculo (`professionalPatientLinks`)
+- [x] Rules + indexes deployados (leitura de pacientes/check-ins só com vínculo active)
+- [ ] UI profissional: convidar, listar pacientes, ver check-ins
+- [ ] UI paciente: aceitar / recusar / revogar convites
+- [ ] Demais features após levantamento com o cliente
+
+---
+
+## Sprint 10 — Monetização do diário → Fase R7
+- [ ] Modelo + entitlements + paywall
+
+---
+
+## Sprint 11 — Integração → Fase R10
+- [ ] Navegação multi-módulo + validação de fluxos
+
+---
+
+## Sprint 12 — Release → Fase R10
+- [ ] LGPD, testes Expo Go 54, preview
+
+---
+
+## Fora de escopo até nova confirmação
+
+- Diagnóstico clínico definitivo / prescrição pelo app ou IA
+- Telemedicina / prontuário completo
+- Health Connect / Apple Health (salvo pedido)
+- Copiar marca de apps de referência

@@ -67,6 +67,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: fonts.bodySemiBold,
     fontSize: fontSizes.body,
+    letterSpacing: 0.2,
   },
   disabled: {
     opacity: 0.45,

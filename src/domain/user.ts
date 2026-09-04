@@ -6,6 +6,7 @@ export type UserProfile = {
   email: string;
   role: UserRole;
   createdAt: Date;
+  updatedAt: Date | null;
 };
 
 export type CreateUserProfileInput = {
@@ -13,4 +14,8 @@ export type CreateUserProfileInput = {
   name: string;
   email: string;
   role: UserRole;
+};
+
+export type UpdateUserProfileInput = {
+  name: string;
 };

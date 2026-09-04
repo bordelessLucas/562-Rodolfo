@@ -12,7 +12,7 @@
 | Paleta de cores | **Provisória** — sage clínico (validar com cliente) |
 | Tipografia | **Provisória** — Literata (display) + Source Sans 3 (body) |
 | Estilo de UI | **Provisório** — calmo, clínico, acolhedor, light mode |
-| Referências visuais | **Pendente** — não fornecidas |
+| Referências visuais | **Recebidas (funcionais)** — Check-in/cards/chips/bottom nav; não copiar marca de terceiros |
 | Dark mode | **Pendente** — não definido (app inicia em light) |
 | Identidade da marca | **Pendente** — a levantar |
 
@@ -82,6 +82,14 @@ Interface **calma, clínica e acolhedora**, neutra e acessível (alto contraste,
 - `Input` — ícone, senha, erro  
 - `Typography` — display, h1–h3, body, caption, label  
 - `Container` — SafeArea + padding horizontal do DS  
+
+### A criar (Check-in — referências do cliente) — próximo ciclo
+
+- [x] `SelectableChip` — multi-seleção (já usado no cadastro; reutilizar no Check-in)
+- [x] `InlineMessage` — feedback error/success/info
+- [ ] `SectionCard` — card por seção do check-in  
+- [ ] `WellbeingScale` — escala 1–10 (dor, peso, energia, humor)  
+- [ ] Bottom tabs: Check-in | Histórico | Tendências | Análise IA  
 
 ---
 

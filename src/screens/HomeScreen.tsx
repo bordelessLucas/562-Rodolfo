@@ -1,26 +1,41 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 
-import { Container, Typography } from '@/src/components';
+import {
+  Button,
+  Container,
+  InlineMessage,
+  Typography,
+} from '@/src/components';
 import { useAuth } from '@/src/hooks/useAuth';
 import { colors, radius, space } from '@/src/theme';
 
-const NAV_ITEMS = [
-  { key: 'home', label: 'Início', icon: 'home-outline' as const },
-  { key: 'diary', label: 'Diário', icon: 'book-outline' as const },
-  { key: 'profile', label: 'Perfil', icon: 'person-outline' as const },
-];
-
 export function HomeScreen() {
   const router = useRouter();
-  const { profile, signOut } = useAuth();
+  const {
+    profile,
+    profileLoading,
+    profileError,
+    refreshProfile,
+    signOut,
+  } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const userName = profile?.name?.split(' ')[0] ?? 'usuário';
   const roleLabel =
-    profile?.role === 'profissional' ? 'profissional de saúde' : 'paciente';
+    profile?.role === 'profissional'
+      ? 'Profissional de saúde'
+      : profile?.role === 'paciente'
+        ? 'Paciente'
+        : 'Conta';
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -32,7 +47,14 @@ export function HomeScreen() {
     }
   };
 
-  const handleNavPress = (_key: string) => {};
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshProfile();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   return (
     <Container
@@ -41,93 +63,102 @@ export function HomeScreen() {
       style={styles.screen}
     >
       <View style={styles.header}>
-        <View style={styles.brandRow}>
-          <Typography variant="h2">Lipedema</Typography>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Sair"
-            onPress={handleLogout}
-            disabled={loggingOut}
-            hitSlop={8}
-            style={styles.logoutButton}
-          >
+        <View>
+          <Typography variant="caption" color={colors.secondary}>
+            Lipedema
+          </Typography>
+          <Typography variant="h2">Início</Typography>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Sair da conta"
+          onPress={handleLogout}
+          disabled={loggingOut}
+          hitSlop={8}
+          style={styles.logoutButton}
+        >
+          {loggingOut ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
             <Ionicons name="log-out-outline" size={22} color={colors.primary} />
-          </Pressable>
-        </View>
-
-        <View style={styles.navBar}>
-          {NAV_ITEMS.map((item) => (
-            <Pressable
-              key={item.key}
-              accessibilityRole="button"
-              accessibilityLabel={item.label}
-              onPress={() => handleNavPress(item.key)}
-              style={[styles.navItem, item.key === 'home' && styles.navItemActive]}
-            >
-              <Ionicons
-                name={item.icon}
-                size={18}
-                color={item.key === 'home' ? colors.primary : colors.textMuted}
-              />
-              <Typography
-                variant="caption"
-                color={item.key === 'home' ? colors.primary : colors.textMuted}
-              >
-                {item.label}
-              </Typography>
-            </Pressable>
-          ))}
-        </View>
+          )}
+        </Pressable>
       </View>
 
-      <View style={styles.greeting}>
-        <Typography variant="h1">Olá, {userName}</Typography>
-        <Typography variant="body" color={colors.textMuted}>
-          Conta de {roleLabel}. Seu espaço de acompanhamento. Em breve: diário e
-          ficha de diagnóstico.
-        </Typography>
-      </View>
+      {profileLoading && !profile ? (
+        <View style={styles.loadingBlock}>
+          <ActivityIndicator color={colors.primary} />
+          <Typography variant="caption" color={colors.textMuted}>
+            Carregando seu perfil…
+          </Typography>
+        </View>
+      ) : null}
 
-      <View style={styles.skeletonStack}>
-        <SkeletonBlock
-          title="Diário de Lipedema"
-          description="Registros e histórico aparecerão aqui."
-          icon="journal-outline"
+      {profileError ? (
+        <View style={styles.errorBlock}>
+          <InlineMessage message={profileError} variant="error" />
+          <Button
+            label="Tentar novamente"
+            variant="outline"
+            loading={refreshing}
+            onPress={handleRefresh}
+          />
+        </View>
+      ) : null}
+
+      {profile ? (
+        <View style={styles.greetingCard}>
+          <Typography variant="h1">Olá, {userName}</Typography>
+          <View style={styles.roleBadge}>
+            <Typography variant="caption" color={colors.primary}>
+              {roleLabel}
+            </Typography>
+          </View>
+          <Typography variant="body" color={colors.textMuted}>
+            Sua conta está ativa. Em breve você registrará o check-in diário
+            aqui.
+          </Typography>
+        </View>
+      ) : null}
+
+      <View style={styles.soonStack}>
+        <SoonCard
+          icon="calendar-outline"
+          title="Check-in diário"
+          description="Tratamentos, bem-estar, medidas e observações — em desenvolvimento."
         />
-        <SkeletonBlock
-          title="Ficha de diagnóstico"
-          description="Resumo da ficha preenchida (estrutura a confirmar)."
-          icon="clipboard-outline"
+        <SoonCard
+          icon="time-outline"
+          title="Histórico e tendências"
+          description="Acompanhar evolução ao longo dos dias — em breve."
         />
-        <SkeletonBlock
-          title="Conteúdos"
-          description="Mentoria e materiais — integração pendente."
-          icon="library-outline"
+        <SoonCard
+          icon="sparkles-outline"
+          title="Análise com IA"
+          description="Insights com base nos seus registros — sem diagnóstico."
         />
       </View>
     </Container>
   );
 }
 
-type SkeletonBlockProps = {
+type SoonCardProps = {
   title: string;
   description: string;
   icon: keyof typeof Ionicons.glyphMap;
 };
 
-function SkeletonBlock({ title, description, icon }: SkeletonBlockProps) {
+function SoonCard({ title, description, icon }: SoonCardProps) {
   return (
-    <View style={styles.skeleton}>
-      <View style={styles.skeletonIcon}>
+    <View style={styles.soonCard}>
+      <View style={styles.soonIcon}>
         <Ionicons name={icon} size={22} color={colors.secondary} />
       </View>
-      <View style={styles.skeletonText}>
+      <View style={styles.soonText}>
         <Typography variant="h3">{title}</Typography>
         <Typography variant="caption" color={colors.textMuted}>
           {description}
         </Typography>
-        <View style={styles.skeletonBar} />
-        <View style={[styles.skeletonBar, styles.skeletonBarShort]} />
       </View>
     </View>
   );
@@ -142,48 +173,45 @@ const styles = StyleSheet.create({
     paddingBottom: space[8],
   },
   header: {
-    gap: space[4],
-  },
-  brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   logoutButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.backgroundAccent,
   },
-  navBar: {
-    flexDirection: 'row',
+  loadingBlock: {
+    alignItems: 'center',
+    gap: space[2],
+    paddingVertical: space[4],
+  },
+  errorBlock: {
+    gap: space[3],
+  },
+  greetingCard: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: space[1],
-    gap: space[1],
+    padding: space[6],
+    gap: space[3],
   },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space[1],
-    paddingVertical: space[2],
+  roleBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.backgroundAccent,
+    paddingHorizontal: space[3],
+    paddingVertical: space[1],
     borderRadius: radius.sm,
   },
-  navItemActive: {
-    backgroundColor: colors.backgroundAccent,
+  soonStack: {
+    gap: space[3],
   },
-  greeting: {
-    gap: space[2],
-  },
-  skeletonStack: {
-    gap: space[4],
-  },
-  skeleton: {
+  soonCard: {
     flexDirection: 'row',
     gap: space[4],
     backgroundColor: colors.surface,
@@ -192,7 +220,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: space[5],
   },
-  skeletonIcon: {
+  soonIcon: {
     width: 44,
     height: 44,
     borderRadius: radius.sm,
@@ -200,17 +228,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  skeletonText: {
+  soonText: {
     flex: 1,
-    gap: space[2],
-  },
-  skeletonBar: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.backgroundAccent,
-    marginTop: space[1],
-  },
-  skeletonBarShort: {
-    width: '62%',
+    gap: space[1],
   },
 });

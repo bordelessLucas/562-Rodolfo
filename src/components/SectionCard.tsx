@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   },
   accent: {
     width: 4,
-    backgroundColor: colors.backgroundAccent,
+    backgroundColor: colors.primary,
   },
   inner: {
     flex: 1,

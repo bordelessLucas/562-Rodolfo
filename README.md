@@ -1,6 +1,6 @@
 # 562-Rodolfo
 
-App mobile React Native (Expo SDK 54) com Firebase.
+App mobile React Native (Expo SDK 57) com Firebase.
 
 ## Setup
 
@@ -10,6 +10,6 @@ App mobile React Native (Expo SDK 54) com Firebase.
 
 ## Stack
 
-- Expo SDK 54 + Expo Router
+- Expo SDK 57 + Expo Router
 - TypeScript (strict)
 - Firebase JS SDK (`src/services/`)

@@ -1,8 +1,10 @@
 # Plano da Fase Atual — Back (só o que o Front usa) + Polish UI/UX
 
-> **Status:** ✅ A+B+C executados  
-> Escopo do produto foi ampliado em 04/09/2026 — ver `escopo.md` completo (comunidade, cursos, vídeos, diagnóstico, monetização).  
-> Check-in e novos módulos **ainda dependem de aprovação** de fase antes de codar.
+> **Status histórico:** ✅ A+B+C executados (auth polish).  
+> **Superseded:** o andamento vivo está em `andamento.md` / `plano_roadmap.md` (R0–R2, R5, R8 vínculo ✅).  
+> Este arquivo descreve a fase de endurecimento de Auth — não use como fila atual de produto.
+
+> Escopo do produto: ver `escopo.md`. Novos módulos exigem aprovação de fase.
 
 ---
 

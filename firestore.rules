@@ -3,25 +3,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: users/{userId}
-    //   uid, name, email, role ('paciente'|'profissional'), createdAt, updatedAt
-    //
-    // Collection: dailyCheckins/{userId}_{date}
-    //   userId, date, treatments, activities, lifestyle, supplements,
-    //   medications, wellbeing, measurements, notes, createdAt, updatedAt
-    //
-    // Collection: professionalPatientLinks
-    //   Pending ID: pending_{professionalId}_{patientEmail}
-    //   Active ID:  {professionalId}_{patientId}
-    //   Fields:
-    //     professionalId: string
-    //     patientId: string | null
-    //     patientEmail: string (lowercase)
-    //     status: pending|active|rejected|revoked
-    //     createdAt, updatedAt, acceptedAt, revokedAt, revokedBy
+    // Assumed Data Model (excerpt)
+    // users.role: paciente | profissional | admin (admin só manual)
+    // courses/{id} + modules/{id} + lessons/{id}
+    // lessonProgress/{userId}_{lessonId}
+    // professionalPatientLinks, dailyCheckins (existing)
     // ===============================================================
 
     function isSignedIn() {
@@ -32,7 +18,7 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isValidRole(role) {
+    function isSignUpRole(role) {
       return role in ['paciente', 'profissional'];
     }
 
@@ -50,6 +36,10 @@ service cloud.firestore {
 
     function isPatientUser() {
       return isSignedIn() && signedInRole() == 'paciente';
+    }
+
+    function isAdminUser() {
+      return isSignedIn() && signedInRole() == 'admin';
     }
 
     function authEmail() {
@@ -184,6 +174,100 @@ service cloud.firestore {
       );
     }
 
+    function courseDoc(courseId) {
+      return get(/databases/$(database)/documents/courses/$(courseId));
+    }
+
+    function courseExists(courseId) {
+      return exists(/databases/$(database)/documents/courses/$(courseId));
+    }
+
+    function canReadCourse(courseId) {
+      return isSignedIn()
+        && courseExists(courseId)
+        && (
+          isAdminUser()
+          || courseDoc(courseId).data.status == 'published'
+          || courseDoc(courseId).data.createdBy == request.auth.uid
+        );
+    }
+
+    function canWriteCourseContent(courseId) {
+      return isSignedIn()
+        && courseExists(courseId)
+        && (
+          isAdminUser()
+          || (
+            isProfessionalUser()
+            && courseDoc(courseId).data.createdBy == request.auth.uid
+            && courseDoc(courseId).data.status in ['draft', 'rejected']
+          )
+        );
+    }
+
+    function courseRequiredKeys() {
+      return [
+        'title', 'description', 'coverUrl', 'kind', 'status',
+        'createdBy', 'createdByRole', 'submittedAt', 'reviewedAt',
+        'reviewedBy', 'rejectionReason', 'publishedAt', 'sortOrder',
+        'createdAt', 'updatedAt'
+      ];
+    }
+
+    function isValidCourseCreate() {
+      return request.resource.data.keys().hasAll(courseRequiredKeys())
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.description is string
+        && request.resource.data.kind in ['curso', 'mentoria']
+        && request.resource.data.createdBy == request.auth.uid
+        && (
+          (
+            isAdminUser()
+            && request.resource.data.createdByRole == 'admin'
+            && request.resource.data.status in [
+              'draft', 'pending_review', 'published', 'rejected'
+            ]
+          )
+          || (
+            isProfessionalUser()
+            && request.resource.data.createdByRole == 'profissional'
+            && request.resource.data.status == 'draft'
+          )
+        );
+    }
+
+    function isAdminCourseUpdate() {
+      return isAdminUser()
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdByRole == resource.data.createdByRole
+        && request.resource.data.keys().hasAll(courseRequiredKeys())
+        && (
+          // Meta/admin edits sem mudar status
+          request.resource.data.status == resource.data.status
+          // Decisão de revisão: só a partir de pending_review
+          || (
+            resource.data.status == 'pending_review'
+            && request.resource.data.status in ['published', 'rejected']
+          )
+        );
+    }
+
+    function isOwnerCourseMetaOrSubmit() {
+      return isProfessionalUser()
+        && resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdByRole == resource.data.createdByRole
+        && request.resource.data.keys().hasAll(courseRequiredKeys())
+        && (
+          (
+            resource.data.status in ['draft', 'rejected']
+            && request.resource.data.status in ['draft', 'pending_review']
+          )
+        )
+        && request.resource.data.status != 'published';
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId) || hasActiveLinkWithPatient(userId);
 
@@ -191,7 +275,7 @@ service cloud.firestore {
         && request.resource.data.uid == userId
         && request.resource.data.email is string
         && request.resource.data.name is string
-        && isValidRole(request.resource.data.role)
+        && isSignUpRole(request.resource.data.role)
         && request.resource.data.keys().hasAll([
           'uid', 'name', 'email', 'role', 'createdAt', 'updatedAt'
         ]);
@@ -241,6 +325,104 @@ service cloud.firestore {
         || isRevokeActiveUpdate();
 
       allow delete: if canDeleteLink();
+    }
+
+    match /courses/{courseId} {
+      allow read: if canReadCourse(courseId);
+
+      allow create: if isValidCourseCreate();
+
+      allow update: if isAdminCourseUpdate() || isOwnerCourseMetaOrSubmit();
+
+      allow delete: if isAdminUser();
+
+      match /modules/{moduleId} {
+        allow read: if canReadCourse(courseId);
+
+        allow create, update: if canWriteCourseContent(courseId)
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.description is string
+          && request.resource.data.sortOrder is number;
+
+        allow delete: if isAdminUser()
+          || (
+            isProfessionalUser()
+            && courseDoc(courseId).data.createdBy == request.auth.uid
+            && courseDoc(courseId).data.status in ['draft', 'rejected']
+          );
+
+        match /lessons/{lessonId} {
+          allow read: if canReadCourse(courseId);
+
+          allow create, update: if canWriteCourseContent(courseId)
+            && request.resource.data.title is string
+            && request.resource.data.title.size() > 0
+            && request.resource.data.description is string
+            && request.resource.data.sortOrder is number
+            && request.resource.data.contentType in ['video', 'text'];
+
+          allow delete: if isAdminUser()
+            || (
+              isProfessionalUser()
+              && courseDoc(courseId).data.createdBy == request.auth.uid
+              && courseDoc(courseId).data.status in ['draft', 'rejected']
+            );
+        }
+      }
+    }
+
+    match /lessonProgress/{progressId} {
+      allow read: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+
+      allow create, update: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.courseId is string
+        && request.resource.data.moduleId is string
+        && request.resource.data.lessonId is string
+        && request.resource.data.completed is bool
+        && progressId == request.auth.uid + '_' + request.resource.data.lessonId;
+
+      allow delete: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    match /contentArticles/{articleId} {
+      allow read: if isSignedIn() && (
+        isAdminUser()
+        || resource.data.status == 'published'
+        || resource.data.createdBy == request.auth.uid
+      );
+
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.summary is string
+        && request.resource.data.body is string
+        && request.resource.data.kind in ['noticia', 'pesquisa', 'artigo']
+        && (
+          (isAdminUser()
+            && request.resource.data.createdByRole == 'admin'
+            && request.resource.data.status in [
+              'draft', 'pending_review', 'published', 'rejected'
+            ])
+          || (isProfessionalUser()
+            && request.resource.data.createdByRole == 'profissional'
+            && request.resource.data.status == 'draft')
+        );
+
+      allow update: if isAdminUser()
+        || (
+          isProfessionalUser()
+          && resource.data.createdBy == request.auth.uid
+          && resource.data.status in ['draft', 'rejected']
+          && request.resource.data.status in ['draft', 'pending_review']
+          && request.resource.data.createdBy == resource.data.createdBy
+        );
+
+      allow delete: if isAdminUser();
     }
 
     match /{document=**} {

@@ -3,7 +3,7 @@
 > Documento vivo. Separar sempre: **confirmado** vs **pendente de detalhamento**.  
 > Não implementar funcionalidades sem aprovação da etapa correspondente.
 
-**Última atualização:** 04/09/2026 — escopo completo do cliente (comunidade, cursos, vídeos, diagnóstico, monetização do diário, profissionais de saúde amplos).
+**Última atualização:** 08/09/2026 — status de implementação alinhado ao código (cursos R5, vínculos UI, Expo SDK 57). Escopo de produto inalterado quanto a gates TBD.
 
 ---
 
@@ -17,7 +17,7 @@ Criar um aplicativo mobile especializado em **lipedema** que una, em um único e
 4. **Comunidade** (posts e comentários entre pacientes)
 5. **Área para profissionais de saúde** que trabalham com lipedema (**não restrito a médicos**)
 
-Stack atual: **React Native (Expo SDK 54) + Firebase (Auth + Firestore)**.
+Stack atual: **React Native (Expo SDK 57) + Firebase (Auth + Firestore)**.
 
 ---
 
@@ -36,12 +36,12 @@ Stack atual: **React Native (Expo SDK 54) + Firebase (Auth + Firestore)**.
 
 | Item | Status | Notas |
 |------|--------|-------|
-| Acesso inicial ao aplicativo | Confirmado / parcial na app | Login, sessão, AuthGate |
-| Identificação do perfil de acesso | Confirmado / parcial | `role`: `paciente` \| `profissional` |
-| Área para profissionais de saúde | Confirmado (existência) | Features da área: a detalhar |
-| Área para pacientes | Confirmado | Check-in, conteúdos, comunidade, diagnóstico |
-| Navegação principal | Confirmado (conceito) | Navegação por perfil; tabs paciente incluem Check-in, etc. |
-| Estrutura inicial da conta | Confirmado / parcial | `users/{uid}` — expandir com edição e preferências |
+| Acesso inicial ao aplicativo | Confirmado / implementado | Login, sessão, AuthGate |
+| Identificação do perfil de acesso | Confirmado / implementado | `role`: `paciente` \| `profissional` \| `admin` (admin manual) |
+| Área para profissionais de saúde | Confirmado / parcial | Vínculos + cursos; demais features a detalhar |
+| Área para pacientes | Confirmado / parcial | Check-in, cursos; comunidade/diagnóstico/biblioteca ainda não |
+| Navegação principal | Confirmado / implementado | Tabs paciente; stacks profissional/admin; cursos sob Explorar |
+| Estrutura inicial da conta | Confirmado / parcial | `users/{uid}` + edição de nome |
 
 ---
 
@@ -52,9 +52,9 @@ Stack atual: **React Native (Expo SDK 54) + Firebase (Auth + Firestore)**.
 | Cadastro de paciente | Confirmado / implementado | Auth + Firestore |
 | Cadastro de profissional de saúde | Confirmado / implementado | Mesmo fluxo, role `profissional` |
 | Dados básicos do perfil | Confirmado / parcial | nome, e-mail, role, createdAt |
-| Edição das informações cadastradas | Confirmado | **A implementar** |
-| Identificação do tipo de usuário | Confirmado / implementado | role |
-| Acesso individualizado conforme perfil | Confirmado | Shells/rotas por perfil **a implementar** |
+| Edição das informações cadastradas | Confirmado / implementado | Nome editável (e-mail/role imutáveis no app) |
+| Identificação do tipo de usuário | Confirmado / implementado | role: paciente \| profissional \| admin (admin só manual) |
+| Acesso individualizado conforme perfil | Confirmado / implementado | Shells `/(paciente)` · `/(profissional)` · `/(admin)` |
 
 ---
 
@@ -69,7 +69,8 @@ Stack atual: **React Native (Expo SDK 54) + Firebase (Auth + Firestore)**.
 | Acesso ao conteúdo conforme usuário | Confirmado |
 | Registro básico de aulas visualizadas | Confirmado |
 
-**Pendências de detalhe:** modelo de hospedagem (in-app vs plataforma externa), quem publica (admin/cliente), paywall do curso vs incluso na assinatura.
+**Pendências de detalhe:** modelo de hospedagem definitiva (Storage vs plataforma externa), paywall do curso vs incluso na assinatura.  
+**Decisão operacional (app):** admin publica a maior parte; profissional pode submeter para aprovação; paciente só consome `published`.
 
 ---
 
@@ -211,7 +212,7 @@ subscriptions / entitlements   # monetização do diário (TBD)
 | Bloco | No escopo? |
 |-------|------------|
 | 1. Estrutura da plataforma | ✅ |
-| 2. Cadastro e perfil | ✅ (edição e shells a implementar) |
+| 2. Cadastro e perfil | ✅ (edição nome + shells por role implementados) |
 | 3. Cursos e mentoria | ✅ |
 | 4. Conteúdos/vídeos pacientes | ✅ |
 | 5. Diagnóstico inicial | ✅ |
@@ -253,19 +254,21 @@ subscriptions / entitlements   # monetização do diário (TBD)
 | Edição de perfil / shells por perfil | ✅ | ✅ |
 | Check-in / diário (MVP) | ✅ | ✅ |
 | Monetização diário | ✅ (intenção) | ❌ |
-| Cursos / mentoria / vídeos | ✅ | ❌ |
+| Cursos / mentoria (base) | ✅ | ✅ |
+| Vídeos pacientes (biblioteca R4) | ✅ | ❌ |
 | Diagnóstico inicial | ✅ | ❌ |
 | Comunidade | ✅ | ❌ |
-| Área profissional | ✅ (existência; features extras TBD) | 🟡 vínculo back ✅ · UI ❌ |
+| Área profissional (vínculo) | ✅ | ✅ back + UI |
+| Área profissional (features extras) | ✅ existência · detalhe TBD | ❌ |
 
-Detalhes de andamento: `andamento.md` · Sprints: `checklist_sprints.md` · **Roadmap de fases:** `plano_roadmap.md` · Plano auth concluído: `plano_fase_atual.md` · Backend profissional: `plano_profissional_backend.md`.
+Detalhes de andamento: `andamento.md` · Sprints: `checklist_sprints.md` · **Roadmap:** `plano_roadmap.md` · Cursos: `plano_cursos.md` · Vínculos: `plano_profissional_backend.md` · Continuidade: `sprint_continuidade_pass.md`.
 
 ---
 
 ## Status do planejamento
 
-**Roadmap:** `plano_roadmap.md` (R0–R2 ✅ · back profissional vínculo ✅ · R3+ e UI profissional aguardam).  
-**Implementação atual:** Auth + shells + Check-in MVP + Histórico + edição de perfil + services de vínculo profissional.  
-**Firestore:** rules + indexes (`dailyCheckins`, `professionalPatientLinks`) deployados em `rodolfo-39b15`.  
-**Fila imediata (sem mudar escopo):** UI de vínculos profissional/paciente **ou** R3 Diagnóstico após aprovação.  
-**Não inventar:** features extras do profissional, monetização, campos do questionário, hospedagem de vídeo — ver pendências acima.
+**Roadmap:** R0–R2 ✅ · R5 cursos base ✅ · R8 vínculo (back+UI) ✅ · R3/R4/R6/R7/R9/R10 e extras do profissional aguardam.  
+**Implementação atual:** Auth + shells (paciente/profissional/admin) + Check-in + Cursos (consumo, submissão, moderação, demo mock) + vínculos profissional↔paciente (UI).  
+**Firestore:** rules/indexes `dailyCheckins`, `professionalPatientLinks`, `courses`, `lessonProgress` (`rodolfo-39b15`).  
+**Fila sugerida:** R3 Diagnóstico **ou** R4 biblioteca (gates do cliente).  
+**Não inventar:** paywall de curso, Storage, features clínicas extras do profissional, campos oficiais do questionário — ver pendências acima.

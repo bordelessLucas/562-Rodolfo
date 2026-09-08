@@ -5,8 +5,11 @@ export function getHomeHrefForRole(role: UserRole | null | undefined): Href {
   if (role === 'profissional') {
     return '/(profissional)' as Href;
   }
+  if (role === 'admin') {
+    return '/(admin)' as Href;
+  }
 
-  return '/(paciente)/checkin' as Href;
+  return '/(paciente)/inicio' as Href;
 }
 
 /** Formata Date local como YYYY-MM-DD */

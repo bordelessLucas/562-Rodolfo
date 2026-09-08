@@ -1,10 +1,9 @@
 # Plano — Backend da Área do Profissional de Saúde
 
-> **Status:** ✅ backend implementado (opção A — sem UI)  
-> **Data:** 04/09/2026  
-> **Escopo:** domain + services + Firestore rules + indexes  
-> **UI:** próxima sprint  
-> **SDK:** Expo 54 — sem alteração.
+> **Status:** ✅ backend + UI mínima (P0–P5)  
+> **Data UI:** 08/09/2026  
+> **Escopo:** domain + services + Firestore rules + indexes + UI vínculos  
+> **SDK:** Expo 57
 
 ---
 
@@ -13,12 +12,12 @@
 | Item | Situação |
 |------|----------|
 | Role `profissional` | Existe no cadastro |
-| Shell profissional | Stub (UI de vínculos ainda não) |
-| Vínculo profissional ↔ paciente | ✅ Collection + services |
+| Shell profissional | ✅ Home + pacientes + cursos |
+| Vínculo profissional ↔ paciente | ✅ Collection + services + UI |
 | Rules | ✅ Leitura de pacientes/check-ins só com link `active` |
 | Indexes | ✅ Inclui queries de `professionalPatientLinks` |
 
-Backend de vínculo **implementado**. Falta a **UI** (próxima sprint).
+Backend de vínculo **implementado**. UI de convite/lista/aceite **implementada**.
 
 ---
 
@@ -245,5 +244,5 @@ Deploy: `firestore.rules` + `firestore.indexes.json` no projeto `rodolfo-39b15`.
 - [x] Domain + services de vínculo e leitura de pacientes  
 - [x] Rules + indexes deployados em `rodolfo-39b15`  
 - [x] Docs-ia atualizados  
-- [ ] UI profissional/paciente (próxima sprint)  
-- [ ] Validação end-to-end no Expo Go (após UI)
+- [x] UI profissional/paciente (Sprint Continuity 08/09/2026)  
+- [ ] Validação end-to-end no Expo Go

@@ -11,7 +11,7 @@ import {
   SelectableChipGroup,
   Typography,
 } from '@/src/components';
-import type { UserRole } from '@/src/domain/user';
+import type { SignUpRole } from '@/src/domain/user';
 import { useAuth } from '@/src/hooks/useAuth';
 import { colors, space } from '@/src/theme';
 
@@ -23,7 +23,7 @@ export function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('paciente');
+  const [role, setRole] = useState<SignUpRole>('paciente');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);

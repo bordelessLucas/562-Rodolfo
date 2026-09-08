@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   heroWash: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderBottomRightRadius: 48,
     height: '42%',
   },

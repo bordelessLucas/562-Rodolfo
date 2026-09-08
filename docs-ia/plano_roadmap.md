@@ -1,9 +1,10 @@
 # Plano Roadmap — Escopo Completo do Projeto
 
-> **Status:** R1 + R2 **aprovados e implementados** (04/09/2026)  
-> **Próxima fase proposta:** UI área profissional (consumir back de vínculos) **ou** R3 Diagnóstico  
-> **Backend profissional:** ✅ services + rules (sem UI) — `plano_profissional_backend.md`  
-> **SDK:** Expo 54 (não alterar).
+> **Status:** R0–R2 ✅ · R5 cursos ✅ · R8 vínculo (back+UI) ✅ — atualizado **08/09/2026**  
+> **Próxima fase sugerida:** R3 Diagnóstico **ou** R4 biblioteca (gates do cliente)  
+> **Cursos:** `plano_cursos.md` (URLs mock; sem Storage)  
+> **Vínculos:** `plano_profissional_backend.md` + `sprint_continuidade_pass.md`  
+> **SDK:** Expo 57
 
 ---
 
@@ -11,11 +12,12 @@
 
 | Já feito | Ainda não |
 |----------|-----------|
-| Auth, cadastro, sessão, rules `users` | UI de vínculos profissional ↔ paciente |
-| Shells paciente/profissional + edição de perfil | R3+ (diagnóstico, conteúdos, cursos, comunidade…) |
-| Check-in MVP + histórico + rules/índice | Monetização (modelo TBD), campos do questionário TBD |
-| Back vínculo profissional (`professionalPatientLinks`) | Features extras do profissional (gate cliente) |
-| UI Login/Cadastro polida | R9 voz/tendências/IA; R10 integração/release |
+| Auth, cadastro, sessão, rules `users` (+ admin manual) | R3 diagnóstico *(gate: campos)* |
+| Shells paciente/profissional/admin + edição de perfil | R4 biblioteca avulsa *(gate: hospedagem)* |
+| Check-in MVP + histórico | Monetização diário (modelo TBD) |
+| **Cursos base (R5):** catálogo, módulos, aulas, progresso, aprovação | R6 comunidade; R9 voz/IA; R10 release |
+| **Vínculos (R8 mín.):** convite, aceite, check-ins RO | Features extras do profissional (gate) |
+| UI Login/Cadastro polida | Paywall de curso; Storage definitivo |
 
 **Princípio de execução**
 1. Entregar **valor em fatias** (módulo usável).
@@ -34,17 +36,17 @@ R1 ─── shells por perfil + edição de conta ✅
   │
 R2 ─── Diário / Check-in MVP + Histórico ✅
   │
-R3 ─── Diagnóstico inicial ← PRÓXIMA (aguardando aprovação)
+R3 ─── Diagnóstico inicial ← sugerida (gate campos)
   │
-R4 ─── Conteúdos e vídeos para pacientes
+R4 ─── Conteúdos e vídeos para pacientes ← alternativa (gate hospedagem)
   │
-R5 ─── Cursos e mentoria
+R5 ─── Cursos e mentoria ✅ (base; paywall/Storage TBD)
   │
 R6 ─── Comunidade (posts + comentários)
   │
 R7 ─── Monetização do diário
   │
-R8 ─── Área do profissional de saúde (após levantamento)
+R8 ─── Área do profissional ✅ vínculo mín. · extras TBD
   │
 R9 ─── Tendências + voz + insights IA (evolução do diário)
   │
@@ -71,9 +73,9 @@ Auth, Firebase, UI base, polish, Memory Bank, escopo completo documentado.
 
 ---
 
-### Fase R1 — Estrutura da plataforma + conta (PRÓXIMA)
+### Fase R1 — Estrutura da plataforma + conta ✅
 
-**Objetivo:** acesso individualizado por perfil + conta editável + navegação base.
+**Objetivo:** acesso individualizado por perfil + conta editável + navegação base. **Entregue.**
 
 #### Backend
 | # | Entrega |
@@ -155,13 +157,15 @@ Fluxo criar/editar/listar no Expo Go; rules deployadas.
 
 ### Fase R5 — Cursos e mentoria
 
-#### Backend
-- `courses` → `modules` → `lessons`; progresso `lessonProgress`
+#### Entregue (base)
+- `courses` → `modules` → `lessons`; `lessonProgress`
+- Paciente consome published; profissional submete; admin publica/aprova
+- Vídeo via `videoUrl` mock (sem Storage)
 
-#### Frontend
-- Catálogo, aulas, marcar visualizado, controle de acesso básico
+#### Pendente
+- Paywall (TBD); upload Storage quando houver; refinamentos de CMS
 
-**Dependência:** decisão de mídia (compartilha com R4).
+**Dependência mídia:** compartilhada com R4 — padrão URL já validado nas aulas.
 
 ---
 
@@ -193,12 +197,13 @@ Fluxo criar/editar/listar no Expo Go; rules deployadas.
 
 **Gate cliente:** features concretas além do vínculo (conteúdo only? mais ações clínicas? etc.).
 
-#### Já entregue (back)
+#### Já entregue
 - Vínculo profissional ↔ paciente (convite por e-mail, aceite, leitura de check-ins)
 - Services + rules + indexes — ver `plano_profissional_backend.md`
+- **UI:** Meus pacientes (pro) + Profissionais vinculados (paciente) — ver `sprint_continuidade_pass.md`
+- Submissão de cursos pelo profissional + moderação admin (R5)
 
 #### Pendente nesta fase
-- UI profissional e paciente para o fluxo de vínculos
 - Só expandir outras features **confirmadas** pelo cliente (não inventar)
 
 ---
@@ -228,7 +233,7 @@ Fluxo criar/editar/listar no Expo Go; rules deployadas.
 | G1 — Perguntas do diagnóstico | R3 “oficial” | Placeholder + disclaimer |
 | G2 — Hospedagem de vídeo | R4/R5 “final” | URLs mock / YouTube unlisted |
 | G3 — Modelo de monetização | R7 | Diário free em R2 |
-| G4 — Features do profissional | R8 completo | Vínculo back ✅ · UI e extras TBD |
+| G4 — Features do profissional | R8 completo | Vínculo back+UI ✅ · extras TBD |
 | G5 — Moderação comunidade | R6 produção | MVP só posts/comentários + report depois |
 
 ---

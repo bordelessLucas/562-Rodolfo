@@ -29,6 +29,19 @@ export default function PacienteLayout() {
         }}
       >
         <Tabs.Screen
+          name="inicio"
+          options={{
+            title: 'Início',
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? 'home' : 'home-outline'}
+                color={color}
+                size={22}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="checkin"
           options={{
             title: 'Check-in',
@@ -78,6 +91,13 @@ export default function PacienteLayout() {
                 size={22}
               />
             ),
+          }}
+        />
+        <Tabs.Screen
+          name="vinculos"
+          options={{
+            href: null,
+            title: 'Vínculos',
           }}
         />
       </Tabs>

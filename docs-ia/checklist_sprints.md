@@ -1,6 +1,6 @@
 # Checklist de Sprints — Aplicativo para Lipedema
 
-> Atualizado em 04/09/2026 — alinhado ao **`plano_roadmap.md`** (fases R0–R10).
+> Atualizado em 08/09/2026 — alinhado ao **`plano_roadmap.md`** (fases R0–R10).
 
 ---
 
@@ -22,7 +22,7 @@
 ---
 
 ## Sprint 0 — Fundação
-- [x] Setup Expo SDK 54 + Firebase
+- [x] Setup Expo SDK 57 + Firebase
 - [x] Memory Bank inicial
 - [x] Escopo completo consolidado em `escopo.md`
 - [x] Roadmap em `plano_roadmap.md`
@@ -45,7 +45,7 @@
 - [x] SelectableChip + InlineMessage
 - [x] Login / Cadastro / Home polidos (Sprint 2.5)
 - [x] SectionCard, WellbeingScale, DateNavigator, ScreenHeader (polish UI)
-- [ ] Navegação principal multi-módulo → R1
+- [x] Navegação principal por perfil (tabs paciente + stacks profissional/admin) → R1
 - [ ] Design System oficial do cliente (quando houver brand kit)
 
 ---
@@ -73,12 +73,22 @@
 ---
 
 ## Sprint 6 — Conteúdos e vídeos → Fase R4
-- [ ] Biblioteca, temas, player, orientação
+- [ ] Biblioteca avulsa por tema, player, orientação
+- [x] Padrão de `videoUrl` mock validado dentro de aulas de curso (R5)
 
 ---
 
 ## Sprint 7 — Cursos e mentoria → Fase R5
-- [ ] Catálogo, módulos, aulas, progresso
+- [x] Domain + services (`courses` / modules / lessons / progress)
+- [x] Rules + indexes deployados
+- [x] Catálogo paciente + progresso de aulas
+- [x] Submissão profissional + aprovação admin
+- [x] Seed mock + docs (`plano_cursos.md`, `seed_cursos_mock.md`)
+- [x] Home paciente: CTA check-in + semana 7 dias + continuar/sugerir
+- [x] Explorar: busca por nome + filtros (curso/mentoria/notícia/pesquisa/artigo)
+- [x] Conteúdo singular: `contentArticles` (notícia/pesquisa/artigo) + admin publicar
+- [ ] Paywall de curso (TBD no escopo)
+- [ ] Upload Storage (quando houver bucket)
 
 ---
 
@@ -90,8 +100,8 @@
 ## Sprint 9 — Área profissional → Fase R8
 - [x] Backend: domain + services de vínculo (`professionalPatientLinks`)
 - [x] Rules + indexes deployados (leitura de pacientes/check-ins só com vínculo active)
-- [ ] UI profissional: convidar, listar pacientes, ver check-ins
-- [ ] UI paciente: aceitar / recusar / revogar convites
+- [x] UI profissional: convidar, listar pacientes, ver check-ins
+- [x] UI paciente: aceitar / recusar / revogar convites
 - [ ] Demais features após levantamento com o cliente
 
 ---
@@ -107,7 +117,7 @@
 ---
 
 ## Sprint 12 — Release → Fase R10
-- [ ] LGPD, testes Expo Go 54, preview
+- [ ] LGPD, testes Expo Go 57, preview
 
 ---
 

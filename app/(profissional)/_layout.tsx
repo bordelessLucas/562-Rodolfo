@@ -11,10 +11,13 @@ export default function ProfissionalLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: colors.background },
+          animation: 'slide_from_right',
         }}
       >
         <Stack.Screen name="index" />
         <Stack.Screen name="perfil" />
+        <Stack.Screen name="cursos" />
+        <Stack.Screen name="pacientes" />
       </Stack>
     </RoleGate>
   );

@@ -13,11 +13,8 @@ import type {
   UserProfile,
   UserRole,
 } from '@/src/domain/user';
+import { isUserRole } from '@/src/domain/user';
 import { db } from '@/src/services/firebase';
-
-function isUserRole(value: unknown): value is UserRole {
-  return value === 'paciente' || value === 'profissional';
-}
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {

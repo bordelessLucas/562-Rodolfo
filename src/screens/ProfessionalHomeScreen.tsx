@@ -7,10 +7,11 @@ import {
   Button,
   Container,
   ScreenHeader,
+  SectionCard,
   Typography,
 } from '@/src/components';
 import { useAuth } from '@/src/hooks/useAuth';
-import { colors, radius, space } from '@/src/theme';
+import { colors, space } from '@/src/theme';
 
 export function ProfessionalHomeScreen() {
   const router = useRouter();
@@ -37,29 +38,50 @@ export function ProfessionalHomeScreen() {
       />
 
       <ScreenHeader
-        eyebrow="Profissional de saúde"
+        eyebrow="Área profissional"
         title={`Olá, ${profile?.name?.split(' ')[0] ?? 'profissional'}`}
-        subtitle="Área dedicada a quem trabalha com lipedema — funcionalidades serão liberadas conforme o escopo."
+        subtitle="Gerencie pacientes vinculados e elabore conteúdos educativos."
       />
 
-      <View style={styles.card}>
-        <Typography variant="h3">Em construção</Typography>
+      <SectionCard
+        title="Cursos e mentorias"
+        description="Crie rascunhos com módulos e videoaulas. Pacientes só veem conteúdos publicados."
+      >
         <Typography variant="body" color={colors.textMuted}>
-          Em breve: ferramentas e conteúdos específicos para o seu perfil. Por
-          enquanto você já pode gerenciar sua conta.
+          Use URL externa de vídeo nesta fase (sem upload para Storage).
         </Typography>
-      </View>
+        <Button
+          label="Meus cursos"
+          onPress={() => router.push('/(profissional)/cursos' as Href)}
+        />
+      </SectionCard>
 
-      <Button
-        label="Abrir perfil"
-        onPress={() => router.push('/(profissional)/perfil' as Href)}
-      />
-      <Button
-        label="Sair"
-        variant="outline"
-        loading={loggingOut}
-        onPress={handleLogout}
-      />
+      <SectionCard
+        title="Pacientes vinculados"
+        description="Convide pelo e-mail e acompanhe check-ins em modo leitura após o aceite."
+      >
+        <Typography variant="body" color={colors.textMuted}>
+          O paciente precisa aceitar o convite. Você não edita o diário dele.
+        </Typography>
+        <Button
+          label="Meus pacientes"
+          onPress={() => router.push('/(profissional)/pacientes' as Href)}
+        />
+      </SectionCard>
+
+      <View style={styles.actions}>
+        <Button
+          label="Abrir perfil"
+          variant="outline"
+          onPress={() => router.push('/(profissional)/perfil' as Href)}
+        />
+        <Button
+          label="Sair"
+          variant="outline"
+          loading={loggingOut}
+          onPress={handleLogout}
+        />
+      </View>
     </Container>
   );
 }
@@ -70,16 +92,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   wash: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     height: '40%',
   },
-  card: {
+  actions: {
     zIndex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: space[5],
     gap: space[3],
   },
 });

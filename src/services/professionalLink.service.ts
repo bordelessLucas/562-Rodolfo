@@ -68,9 +68,15 @@ function mapLink(
   const revokedAt =
     data.revokedAt instanceof Timestamp ? data.revokedAt.toDate() : null;
 
+  const professionalName =
+    typeof data.professionalName === 'string' && data.professionalName.trim()
+      ? data.professionalName.trim()
+      : null;
+
   return {
     id,
     professionalId: data.professionalId,
+    professionalName,
     patientId,
     patientEmail: data.patientEmail,
     status: data.status,
@@ -120,6 +126,9 @@ export async function invitePatientByEmail(
 
   await assertProfessional(input.professionalId);
 
+  const professional = await getUserProfile(input.professionalId);
+  const professionalName = professional?.name?.trim() || null;
+
   const existingForProfessional = await listLinksForProfessional(
     input.professionalId,
   );
@@ -151,6 +160,7 @@ export async function invitePatientByEmail(
 
   await setDoc(ref, {
     professionalId: input.professionalId,
+    professionalName,
     patientId: null,
     patientEmail,
     status: 'pending' satisfies LinkStatus,
@@ -276,6 +286,7 @@ export async function acceptLink(
 
   await setDoc(activeRef, {
     professionalId: pending.professionalId,
+    professionalName: pending.professionalName,
     patientId,
     patientEmail: pending.patientEmail,
     status: 'active' satisfies LinkStatus,

@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 
-import type { UserProfile, UserRole } from '@/src/domain/user';
+import type { SignUpRole, UserProfile } from '@/src/domain/user';
 import {
   deleteAuthUser,
   logOut as authLogOut,
@@ -29,7 +29,7 @@ export type RegisterInput = {
   name: string;
   email: string;
   password: string;
-  role: UserRole;
+  role: SignUpRole;
 };
 
 export type AuthContextValue = {

@@ -5,6 +5,8 @@ export type LinkRevokedBy = 'profissional' | 'paciente';
 export type ProfessionalPatientLink = {
   id: string;
   professionalId: string;
+  /** Nome do profissional no momento do convite (denormalizado para a UI do paciente). */
+  professionalName: string | null;
   patientId: string | null;
   patientEmail: string;
   status: LinkStatus;

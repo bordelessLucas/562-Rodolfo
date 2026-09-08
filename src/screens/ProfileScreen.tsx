@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 
 import {
   Button,
@@ -12,6 +12,7 @@ import {
 } from '@/src/components';
 import { useAuth } from '@/src/hooks/useAuth';
 import { colors, radius, space } from '@/src/theme';
+import { getHomeHrefForRole } from '@/src/utils/navigation';
 
 export function ProfileScreen() {
   const router = useRouter();
@@ -34,10 +35,16 @@ export function ProfileScreen() {
     setName(profile?.name ?? '');
   }, [profile?.name]);
 
+  /** Paciente usa tab; profissional/admin usam Stack e precisam de voltar. */
+  const showBack =
+    profile?.role === 'profissional' || profile?.role === 'admin';
+
   const roleLabel =
     profile?.role === 'profissional'
       ? 'Profissional de saúde'
-      : 'Paciente';
+      : profile?.role === 'admin'
+        ? 'Administrador'
+        : 'Paciente';
 
   const initials =
     profile?.name
@@ -84,6 +91,12 @@ export function ProfileScreen() {
         eyebrow="Conta"
         title="Perfil"
         subtitle="Atualize seu nome. E-mail e tipo de perfil ficam protegidos."
+        onBack={
+          showBack
+            ? () => router.replace(getHomeHrefForRole(profile?.role) as Href)
+            : undefined
+        }
+        backLabel="Início"
       />
 
       {profileError ? (
@@ -132,6 +145,13 @@ export function ProfileScreen() {
         ) : null}
 
         <Button label="Salvar alterações" loading={saving} onPress={handleSave} />
+        {profile?.role === 'paciente' ? (
+          <Button
+            label="Profissionais vinculados"
+            variant="outline"
+            onPress={() => router.push('/(paciente)/vinculos' as Href)}
+          />
+        ) : null}
         <Button
           label="Sair da conta"
           variant="outline"

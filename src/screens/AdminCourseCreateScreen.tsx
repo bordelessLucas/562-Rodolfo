@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -12,11 +12,13 @@ import {
   SelectableChipGroup,
   Typography,
 } from '@/src/components';
+import { useToast } from '@/src/contexts/ToastContext';
 import { useAdminCourseCreate } from '@/src/hooks/useAdminCourseCreate';
 import { space } from '@/src/theme';
 
 export function AdminCourseCreateScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const {
     title,
     setTitle,
@@ -33,10 +35,27 @@ export function AdminCourseCreateScreen() {
     sortOrder,
     setSortOrder,
     loading,
-    message,
     error,
     publish,
   } = useAdminCourseCreate();
+
+  const handlePublish = async () => {
+    const result = await publish();
+    if (!result.ok) {
+      showToast({
+        message: result.error,
+        variant: 'error',
+      });
+      return;
+    }
+
+    const kindLabel = result.kind === 'mentoria' ? 'Mentoria' : 'Curso';
+    showToast({
+      message: `${kindLabel} publicado: ${result.title}`,
+      variant: 'success',
+    });
+    router.replace('/(admin)' as Href);
+  };
 
   return (
     <Container
@@ -49,12 +68,11 @@ export function AdminCourseCreateScreen() {
         eyebrow="Publicação"
         title="Novo curso"
         subtitle="Crie e publique diretamente para o catálogo de pacientes."
-        onBack={() => router.back()}
+        onBack={() => router.replace('/(admin)' as Href)}
         backLabel="Início"
       />
 
       {error ? <InlineMessage message={error} variant="error" /> : null}
-      {message ? <InlineMessage message={message} variant="success" /> : null}
 
       <Input label="Título" value={title} onChangeText={setTitle} />
       <Input
@@ -103,7 +121,11 @@ export function AdminCourseCreateScreen() {
         autoCapitalize="none"
       />
 
-      <Button label="Publicar agora" loading={loading} onPress={publish} />
+      <Button
+        label="Publicar agora"
+        loading={loading}
+        onPress={() => void handlePublish()}
+      />
     </Container>
   );
 }

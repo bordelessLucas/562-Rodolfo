@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, type Href } from 'expo-router';
-import React from 'react';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import React, { useCallback } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import {
@@ -12,8 +12,13 @@ import {
   Typography,
 } from '@/src/components';
 import { articleKindLabel } from '@/src/domain/article';
+import {
+  insightToneColor,
+  type CheckinInsightLevel,
+} from '@/src/domain/checkinInsight';
 import { useAuth } from '@/src/hooks/useAuth';
 import { useContinueLearning } from '@/src/hooks/useContinueLearning';
+import { useTodayCheckinInsight } from '@/src/hooks/useTodayCheckinInsight';
 import { useWeekCheckins } from '@/src/hooks/useWeekCheckins';
 import { colors, radius, space } from '@/src/theme';
 import {
@@ -21,11 +26,58 @@ import {
   patientLessonHref,
 } from '@/src/utils/patientCoursesNav';
 
+function toneToColor(
+  tone: ReturnType<typeof insightToneColor>,
+): string {
+  switch (tone) {
+    case 'success':
+      return colors.success;
+    case 'secondary':
+      return colors.secondary;
+    case 'warning':
+      return colors.warning;
+    case 'error':
+      return colors.error;
+    default:
+      return colors.textMuted;
+  }
+}
+
+function levelIcon(
+  level: CheckinInsightLevel,
+): keyof typeof Ionicons.glyphMap {
+  switch (level) {
+    case 'ok':
+      return 'checkmark-circle';
+    case 'comum':
+      return 'ellipse';
+    case 'anormal':
+      return 'alert-circle';
+    case 'risco':
+      return 'warning';
+    case 'muito_risco':
+      return 'warning';
+    default:
+      return 'help-circle-outline';
+  }
+}
+
 export function PatientHomeScreen() {
   const router = useRouter();
   const { profile, user } = useAuth();
-  const { weekDays, todayDone, loading: weekLoading, error: weekError } =
-    useWeekCheckins(user?.uid);
+  const {
+    weekDays,
+    todayDone,
+    loading: weekLoading,
+    error: weekError,
+    refresh: refreshWeek,
+  } = useWeekCheckins(user?.uid);
+  const {
+    insight,
+    loading: insightLoading,
+    error: insightError,
+    refresh: refreshInsight,
+  } = useTodayCheckinInsight(user?.uid);
   const {
     suggestion,
     featured,
@@ -33,7 +85,15 @@ export function PatientHomeScreen() {
     loading: learnLoading,
   } = useContinueLearning(user?.uid);
 
+  useFocusEffect(
+    useCallback(() => {
+      void refreshWeek();
+      void refreshInsight();
+    }, [refreshWeek, refreshInsight]),
+  );
+
   const firstName = profile?.name?.split(' ')[0] ?? 'olá';
+  const insightColor = toneToColor(insightToneColor(insight.level));
 
   const openContinue = () => {
     if (suggestion) {
@@ -68,26 +128,12 @@ export function PatientHomeScreen() {
       <ScreenHeader
         eyebrow="Início"
         title={`Olá, ${firstName}`}
-        subtitle="Acompanhe seu check-in da semana e continue seus conteúdos."
+        subtitle="Continuidade do cuidado, check-in e um olhar orientativo do dia."
       />
 
       <SectionCard
-        title="Check-in de hoje"
-        description={
-          todayDone
-            ? 'Você já registrou o dia. Pode revisar ou ajustar o check-in.'
-            : 'Reserve um momento para registrar como está se sentindo.'
-        }
-      >
-        <Button
-          label={todayDone ? 'Abrir check-in de hoje' : 'Fazer check-in diário'}
-          onPress={() => router.push('/(paciente)/checkin' as Href)}
-        />
-      </SectionCard>
-
-      <SectionCard
         title="Sua semana"
-        description="Dias com check-in registrado nesta semana."
+        description="Acompanhe a continuidade do tratamento e registre o dia."
       >
         {weekError ? (
           <InlineMessage message={weekError} variant="error" />
@@ -122,6 +168,96 @@ export function PatientHomeScreen() {
                 </Typography>
               </View>
             ))}
+          </View>
+        )}
+
+        <View style={styles.todayBlock}>
+          <Typography variant="label">
+            {todayDone ? 'Check-in de hoje feito' : 'Check-in de hoje'}
+          </Typography>
+          <Typography variant="body" color={colors.textMuted}>
+            {todayDone
+              ? 'Você já registrou o dia. Pode revisar ou ajustar no Check-in.'
+              : 'Reserve um momento para registrar como está se sentindo.'}
+          </Typography>
+          <Button
+            label={
+              todayDone ? 'Abrir check-in de hoje' : 'Fazer check-in diário'
+            }
+            onPress={() => router.push('/(paciente)/checkin' as Href)}
+          />
+        </View>
+      </SectionCard>
+
+      <SectionCard
+        title="Indicador do dia"
+        description="Leitura orientativa do check-in. Não é diagnóstico clínico."
+      >
+        {insightError ? (
+          <InlineMessage message={insightError} variant="error" />
+        ) : null}
+        {insightLoading ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : (
+          <View style={styles.insightBlock}>
+            <View style={styles.insightHeader}>
+              <View
+                style={[
+                  styles.insightBadge,
+                  { backgroundColor: `${insightColor}22` },
+                ]}
+              >
+                <Ionicons
+                  name={levelIcon(insight.level)}
+                  size={22}
+                  color={insightColor}
+                />
+              </View>
+              <View style={styles.insightTitles}>
+                <Typography variant="caption" color={colors.textMuted}>
+                  Resultado orientativo
+                </Typography>
+                <Typography variant="h3" color={insightColor}>
+                  {insight.label}
+                </Typography>
+              </View>
+            </View>
+
+            <View style={styles.meterTrack}>
+              <View
+                style={[
+                  styles.meterFill,
+                  {
+                    width: `${insight.score}%`,
+                    backgroundColor: insightColor,
+                  },
+                ]}
+              />
+            </View>
+
+            <Typography variant="body" color={colors.textMuted}>
+              {insight.summary}
+            </Typography>
+
+            {insight.factors.length > 0 ? (
+              <View style={styles.factorRow}>
+                {insight.factors.map((factor) => (
+                  <View key={factor} style={styles.factorChip}>
+                    <Typography variant="caption" color={colors.primary}>
+                      {factor}
+                    </Typography>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            {insight.level === 'sem_dados' ? (
+              <Button
+                label="Fazer check-in para analisar"
+                variant="outline"
+                onPress={() => router.push('/(paciente)/checkin' as Href)}
+              />
+            ) : null}
           </View>
         )}
       </SectionCard>
@@ -234,6 +370,53 @@ const styles = StyleSheet.create({
   dotToday: {
     borderColor: colors.secondary,
     borderWidth: 2,
+  },
+  todayBlock: {
+    gap: space[2],
+    marginTop: space[2],
+    paddingTop: space[4],
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  insightBlock: {
+    gap: space[3],
+  },
+  insightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[3],
+  },
+  insightBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  insightTitles: {
+    flex: 1,
+    gap: 2,
+  },
+  meterTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.backgroundAccent,
+    overflow: 'hidden',
+  },
+  meterFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  factorRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space[2],
+  },
+  factorChip: {
+    paddingHorizontal: space[3],
+    paddingVertical: space[1],
+    borderRadius: radius.sm,
+    backgroundColor: colors.backgroundAccent,
   },
   suggestCard: {
     gap: space[2],

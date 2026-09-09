@@ -58,6 +58,7 @@
 ## Sprint 3 — Check-in / Diário (MVP) → Fase R2 ✅
 - [x] Domain + `checkin.service` + rules + índice
 - [x] UI Check-in + Histórico
+- [x] Check-in unificado: form + histórico + filtros + minimizar após salvar
 - [ ] (Depois) gate monetização → R7
 
 ---
@@ -93,7 +94,10 @@
 ---
 
 ## Sprint 8 — Comunidade → Fase R6
-- [ ] Posts + comentários
+- [x] Model `communities` + members + posts + comments
+- [x] Admin cria/publica; profissional solicita; paciente entra e interage
+- [x] Tab Comunidade (substitui Histórico na bottom bar)
+- [ ] Moderação / denúncia / regras sensíveis (TBD)
 
 ---
 

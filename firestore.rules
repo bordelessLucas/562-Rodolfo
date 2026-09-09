@@ -38,8 +38,10 @@ service cloud.firestore {
       return isSignedIn() && signedInRole() == 'paciente';
     }
 
-    function isAdminUser() {
-      return isSignedIn() && signedInRole() == 'admin';
+function isAdminUser() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userDoc(request.auth.uid).data.role == 'admin';
     }
 
     function authEmail() {
@@ -192,6 +194,15 @@ service cloud.firestore {
         );
     }
 
+    /** Leitura de documento de curso já carregado em `resource` (list/get). */
+    function canReadCourseResource() {
+      return isSignedIn() && (
+        isAdminUser()
+        || resource.data.status == 'published'
+        || resource.data.createdBy == request.auth.uid
+      );
+    }
+
     function canWriteCourseContent(courseId) {
       return isSignedIn()
         && courseExists(courseId)
@@ -269,7 +280,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isOwner(userId) || hasActiveLinkWithPatient(userId);
+      allow read: if isOwner(userId)
+        || hasActiveLinkWithPatient(userId)
+        || isAdminUser();
 
       allow create: if isOwner(userId)
         && request.resource.data.uid == userId
@@ -291,7 +304,23 @@ service cloud.firestore {
     }
 
     match /dailyCheckins/{checkinId} {
-      allow read: if isSignedIn()
+      // get em doc inexistente: resource é null — sem este caso o app
+      // não consegue checar existência antes do create (save/load falham).
+      allow get: if isSignedIn() && (
+        (
+          resource != null
+          && (
+            resource.data.userId == request.auth.uid
+            || hasActiveLinkWithPatient(resource.data.userId)
+          )
+        )
+        || (
+          resource == null
+          && checkinId.matches('^' + request.auth.uid + '_.*')
+        )
+      );
+
+      allow list: if isSignedIn()
         && (
           resource.data.userId == request.auth.uid
           || hasActiveLinkWithPatient(resource.data.userId)
@@ -300,6 +329,7 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.date is string
+        && checkinId == request.auth.uid + '_' + request.resource.data.date
         && request.resource.data.keys().hasAll([
           'userId', 'date', 'treatments', 'activities', 'lifestyle',
           'supplements', 'medications', 'wellbeing', 'measurements',
@@ -328,7 +358,7 @@ service cloud.firestore {
     }
 
     match /courses/{courseId} {
-      allow read: if canReadCourse(courseId);
+      allow read: if canReadCourseResource();
 
       allow create: if isValidCourseCreate();
 
@@ -423,6 +453,117 @@ service cloud.firestore {
         );
 
       allow delete: if isAdminUser();
+    }
+
+    match /communities/{communityId} {
+      function communityData() {
+        return get(/databases/$(database)/documents/communities/$(communityId)).data;
+      }
+
+      function isCommunityMember() {
+        return isSignedIn()
+          && exists(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid));
+      }
+
+      allow read: if isSignedIn() && (
+        isAdminUser()
+        || resource.data.status == 'published'
+        || resource.data.createdBy == request.auth.uid
+      );
+
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.description is string
+        && request.resource.data.memberCount == 0
+        && (
+          (isAdminUser()
+            && request.resource.data.createdByRole in ['admin', 'profissional']
+            && request.resource.data.status in [
+              'draft', 'pending', 'published', 'rejected'
+            ])
+          || (isProfessionalUser()
+            && request.resource.data.createdByRole == 'profissional'
+            && request.resource.data.status == 'pending')
+        );
+
+      allow update: if isAdminUser()
+        || (
+          isSignedIn()
+          && resource.data.status == 'published'
+          && request.resource.data.status == 'published'
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdByRole == resource.data.createdByRole
+          && request.resource.data.title == resource.data.title
+          && request.resource.data.description == resource.data.description
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['memberCount', 'updatedAt'])
+        );
+
+      allow delete: if isAdminUser();
+
+      match /members/{memberId} {
+        allow get: if isSignedIn() && (
+          (
+            resource != null
+            && (
+              resource.data.userId == request.auth.uid
+              || isAdminUser()
+            )
+          )
+          || (resource == null && memberId == request.auth.uid)
+        );
+
+        allow list: if isSignedIn() && (isAdminUser() || isCommunityMember());
+
+        allow create: if isSignedIn()
+          && memberId == request.auth.uid
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.communityId == communityId
+          && request.resource.data.userName is string
+          && communityData().status == 'published';
+
+        allow delete: if isSignedIn()
+          && resource.data.userId == request.auth.uid;
+
+        allow update: if false;
+      }
+
+      match /posts/{postId} {
+        allow read: if isSignedIn()
+          && communityData().status == 'published'
+          && (isCommunityMember() || isAdminUser());
+
+        allow create: if isSignedIn()
+          && isCommunityMember()
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.communityId == communityId
+          && request.resource.data.body is string
+          && request.resource.data.body.size() > 0
+          && request.resource.data.authorName is string;
+
+        allow update, delete: if isSignedIn()
+          && resource.data.authorId == request.auth.uid;
+
+        match /comments/{commentId} {
+          allow read: if isSignedIn()
+            && communityData().status == 'published'
+            && (isCommunityMember() || isAdminUser());
+
+          allow create: if isSignedIn()
+            && isCommunityMember()
+            && request.resource.data.authorId == request.auth.uid
+            && request.resource.data.communityId == communityId
+            && request.resource.data.postId == postId
+            && request.resource.data.body is string
+            && request.resource.data.body.size() > 0
+            && request.resource.data.authorName is string;
+
+          allow update, delete: if isSignedIn()
+            && resource.data.authorId == request.auth.uid;
+        }
+      }
     }
 
     match /{document=**} {

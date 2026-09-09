@@ -29,6 +29,7 @@ import {
 } from '@/src/domain/course';
 import { isCoursesDemoMode } from '@/src/config/coursesDemo';
 import {
+  MOCK_PENDING_COURSES,
   MOCK_PUBLISHED_COURSES,
   getLocalMockCourseDetail,
   getLocalMockLesson,
@@ -390,7 +391,7 @@ export async function createCourse(
     status,
     createdBy: input.createdBy,
     createdByRole: input.createdByRole,
-    submittedAt: null,
+    submittedAt: status === 'pending_review' ? serverTimestamp() : null,
     reviewedAt: null,
     reviewedBy: null,
     rejectionReason: null,
@@ -633,20 +634,26 @@ export async function publishCourseDirect(
 }
 
 /**
- * Grava cursos mock published (idempotente por IDs fixos).
+ * Grava cursos mock published + pendentes para a fila (idempotente por IDs fixos).
  * Requer usuário admin autenticado (rules).
  */
 export async function seedPublishedMockCourses(
   adminUid: string,
-): Promise<{ created: number; skipped: number }> {
+): Promise<{
+  created: number;
+  skipped: number;
+  pendingCreated: number;
+  pendingSkipped: number;
+}> {
   let created = 0;
   let skipped = 0;
+  let pendingCreated = 0;
+  let pendingSkipped = 0;
 
-  for (const seed of MOCK_PUBLISHED_COURSES) {
+  const writeSeed = async (seed: (typeof MOCK_PUBLISHED_COURSES)[number]) => {
     const existing = await getCourseById(seed.id);
     if (existing) {
-      skipped += 1;
-      continue;
+      return 'skipped' as const;
     }
 
     await createCourse(
@@ -658,7 +665,7 @@ export async function seedPublishedMockCourses(
         sortOrder: seed.course.sortOrder,
         createdBy: adminUid,
         createdByRole: 'admin',
-        status: 'published',
+        status: seed.course.status,
       },
       seed.id,
     );
@@ -678,8 +685,26 @@ export async function seedPublishedMockCourses(
         });
       }
     }
-    created += 1;
+    return 'created' as const;
+  };
+
+  for (const seed of MOCK_PUBLISHED_COURSES) {
+    const result = await writeSeed(seed);
+    if (result === 'created') {
+      created += 1;
+    } else {
+      skipped += 1;
+    }
   }
 
-  return { created, skipped };
+  for (const seed of MOCK_PENDING_COURSES) {
+    const result = await writeSeed(seed);
+    if (result === 'created') {
+      pendingCreated += 1;
+    } else {
+      pendingSkipped += 1;
+    }
+  }
+
+  return { created, skipped, pendingCreated, pendingSkipped };
 }

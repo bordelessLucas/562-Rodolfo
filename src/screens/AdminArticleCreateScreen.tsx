@@ -13,19 +13,20 @@ import {
   Typography,
 } from '@/src/components';
 import type { ArticleKind } from '@/src/domain/article';
+import { useToast } from '@/src/contexts/ToastContext';
 import { useAuth } from '@/src/hooks/useAuth';
 import { createArticle } from '@/src/services/article.service';
-import { colors, space } from '@/src/theme';
+import { space } from '@/src/theme';
 
 export function AdminArticleCreateScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [body, setBody] = useState('');
   const [kind, setKind] = useState<ArticleKind>('noticia');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   const publish = async () => {
@@ -34,7 +35,6 @@ export function AdminArticleCreateScreen() {
     }
     setLoading(true);
     setError('');
-    setMessage('');
     try {
       const created = await createArticle({
         title,
@@ -45,12 +45,16 @@ export function AdminArticleCreateScreen() {
         createdByRole: 'admin',
         status: 'published',
       });
-      setMessage(`Publicado: ${created.title}`);
-      setTitle('');
-      setSummary('');
-      setBody('');
+      showToast({
+        message: `Publicado: ${created.title}`,
+        variant: 'success',
+      });
+      router.replace('/(admin)' as Href);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao publicar.');
+      const message =
+        err instanceof Error ? err.message : 'Falha ao publicar.';
+      setError(message);
+      showToast({ message, variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -67,11 +71,11 @@ export function AdminArticleCreateScreen() {
         eyebrow="Publicação"
         title="Novo conteúdo"
         subtitle="Notícia, pesquisa ou artigo singular (sem módulos)."
-        onBack={() => router.back()}
+        onBack={() => router.replace('/(admin)' as Href)}
+        backLabel="Início"
       />
 
       {error ? <InlineMessage message={error} variant="error" /> : null}
-      {message ? <InlineMessage message={message} variant="success" /> : null}
 
       <Input label="Título" value={title} onChangeText={setTitle} />
       <Input label="Resumo" value={summary} onChangeText={setSummary} />
@@ -98,11 +102,10 @@ export function AdminArticleCreateScreen() {
         </SelectableChipGroup>
       </View>
 
-      <Button label="Publicar agora" loading={loading} onPress={publish} />
       <Button
-        label="Voltar"
-        variant="outline"
-        onPress={() => router.replace('/(admin)' as Href)}
+        label="Publicar agora"
+        loading={loading}
+        onPress={() => void publish()}
       />
     </Container>
   );
@@ -111,6 +114,7 @@ export function AdminArticleCreateScreen() {
 const styles = StyleSheet.create({
   content: {
     gap: space[4],
+    paddingBottom: space[8],
   },
   block: {
     gap: space[2],

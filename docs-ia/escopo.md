@@ -40,7 +40,7 @@ Stack atual: **React Native (Expo SDK 57) + Firebase (Auth + Firestore)**.
 | Identificação do perfil de acesso | Confirmado / implementado | `role`: `paciente` \| `profissional` \| `admin` (admin manual) |
 | Área para profissionais de saúde | Confirmado / parcial | Vínculos + cursos; demais features a detalhar |
 | Área para pacientes | Confirmado / parcial | Check-in, cursos; comunidade/diagnóstico/biblioteca ainda não |
-| Navegação principal | Confirmado / implementado | Tabs paciente; stacks profissional/admin; cursos sob Explorar |
+| Navegação principal | Confirmado / implementado | Tabs: Início · Check-in (com histórico) · Comunidade · Explorar · Perfil |
 | Estrutura inicial da conta | Confirmado / parcial | `users/{uid}` + edição de nome |
 
 ---
@@ -109,16 +109,20 @@ Stack atual: **React Native (Expo SDK 57) + Firebase (Auth + Firestore)**.
 
 | Item | Status |
 |------|--------|
-| Área de comunidade | Confirmado |
-| Publicações de pacientes | Confirmado |
-| Campo para criação de posts | Confirmado |
-| Comentários nas publicações | Confirmado |
-| Visualização das interações | Confirmado |
-| Estrutura básica de participação entre usuários | Confirmado |
+| Área de comunidade | Confirmado / implementado (base) |
+| Comunidades/grupos publicados pelo app | Confirmado / implementado |
+| Admin cria ou aprova comunidades | Confirmado / implementado |
+| Profissional solicita comunidade (pendente aprovação) | Confirmado / implementado |
+| Paciente entra e interage (post + comentário) | Confirmado / implementado |
+| Publicações de pacientes | Confirmado / implementado |
+| Campo para criação de posts | Confirmado / implementado |
+| Comentários nas publicações | Confirmado / implementado |
+| Visualização das interações | Confirmado / implementado |
+| Estrutura básica de participação entre usuários | Confirmado / implementado |
 
-**Objetivo:** pacientes trocarem informações **dentro do próprio app** (postagem + comentário).
+**Objetivo:** pacientes trocarem informações **dentro do próprio app** em comunidades temáticas (postagem + comentário).
 
-**Pendências:** moderação, denúncia, se profissional participa, regras de conteúdo sensível.
+**Pendências:** moderação avançada, denúncia, regras de conteúdo sensível, papéis internos no grupo.
 
 ---
 

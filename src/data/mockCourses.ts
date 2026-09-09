@@ -19,7 +19,7 @@ export const MOCK_VIDEO_URL =
 export type SeedCoursePayload = {
   id: string;
   course: Omit<CreateCourseInput, 'createdBy' | 'createdByRole' | 'status'> & {
-    status: 'published';
+    status: 'published' | 'pending_review';
     sortOrder: number;
   };
   modules: Array<{
@@ -143,6 +143,82 @@ export const MOCK_PUBLISHED_COURSES: SeedCoursePayload[] = [
   },
 ];
 
+/** Submissões pendentes para a fila de aprovação do admin (seed demo). */
+export const MOCK_PENDING_COURSES: SeedCoursePayload[] = [
+  {
+    id: 'seed_pending_curso_edema',
+    course: {
+      title: '[Demo] Curso: edema e cuidados diários',
+      description:
+        'Submissão de demonstração aguardando aprovação. Conteúdo educativo sobre rotina e sinais de alerta.',
+      coverUrl: null,
+      kind: 'curso' as CourseKind,
+      status: 'pending_review',
+      sortOrder: 90,
+    },
+    modules: [
+      {
+        id: 'mod_rotina',
+        input: {
+          title: 'Rotina diária',
+          description: 'Hábitos de apoio.',
+          sortOrder: 1,
+        },
+        lessons: [
+          {
+            id: 'les_habitos',
+            input: {
+              title: 'Hábitos que ajudam no dia a dia',
+              description: 'Videoaula demonstrativa.',
+              sortOrder: 1,
+              contentType: 'video',
+              videoUrl: MOCK_VIDEO_URL,
+              textBody: null,
+              durationSeconds: 180,
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'seed_pending_mentoria_movimento',
+    course: {
+      title: '[Demo] Mentoria: movimento seguro',
+      description:
+        'Pedido de mentoria em demonstração (fila de revisão). Foco em caminhada e pausas ativas.',
+      coverUrl: null,
+      kind: 'mentoria' as CourseKind,
+      status: 'pending_review',
+      sortOrder: 91,
+    },
+    modules: [
+      {
+        id: 'mod_movimento',
+        input: {
+          title: 'Movimento',
+          description: 'Orientações iniciais.',
+          sortOrder: 1,
+        },
+        lessons: [
+          {
+            id: 'les_caminhada',
+            input: {
+              title: 'Caminhada com conforto',
+              description: 'Videoaula demonstrativa.',
+              sortOrder: 1,
+              contentType: 'video',
+              videoUrl: MOCK_VIDEO_URL,
+              textBody: null,
+              durationSeconds: 160,
+            },
+          },
+        ],
+      },
+    ],
+  },
+];
+
 const MOCK_NOW = new Date('2026-01-01T12:00:00.000Z');
 
 function toCourse(seed: SeedCoursePayload): Course {
@@ -220,5 +296,8 @@ export function getLocalMockLesson(
 }
 
 export function isLocalMockCourseId(courseId: string): boolean {
-  return MOCK_PUBLISHED_COURSES.some((item) => item.id === courseId);
+  return (
+    MOCK_PUBLISHED_COURSES.some((item) => item.id === courseId) ||
+    MOCK_PENDING_COURSES.some((item) => item.id === courseId)
+  );
 }

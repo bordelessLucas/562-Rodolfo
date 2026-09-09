@@ -9,6 +9,10 @@ import {
   upsertModule,
 } from '@/src/services/course.service';
 
+export type AdminCoursePublishResult =
+  | { ok: true; title: string; kind: CourseKind }
+  | { ok: false; error: string };
+
 export function useAdminCourseCreate() {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
@@ -19,16 +23,14 @@ export function useAdminCourseCreate() {
   const [videoUrl, setVideoUrl] = useState(MOCK_VIDEO_URL);
   const [sortOrder, setSortOrder] = useState('10');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const publish = useCallback(async () => {
+  const publish = useCallback(async (): Promise<AdminCoursePublishResult> => {
     if (!user) {
-      return;
+      return { ok: false, error: 'Faça login novamente.' };
     }
     setLoading(true);
     setError('');
-    setMessage('');
     try {
       const course = await createCourse({
         title,
@@ -61,11 +63,12 @@ export function useAdminCourseCreate() {
         durationSeconds: 180,
       });
 
-      setMessage(`Curso publicado: ${course.title}`);
-      setTitle('');
-      setDescription('');
+      return { ok: true, title: course.title, kind };
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao publicar.');
+      const message =
+        err instanceof Error ? err.message : 'Falha ao publicar.';
+      setError(message);
+      return { ok: false, error: message };
     } finally {
       setLoading(false);
     }
@@ -96,7 +99,6 @@ export function useAdminCourseCreate() {
     sortOrder,
     setSortOrder,
     loading,
-    message,
     error,
     publish,
   };

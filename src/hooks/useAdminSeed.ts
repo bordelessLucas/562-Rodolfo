@@ -2,10 +2,11 @@ import { useCallback, useState } from 'react';
 
 import { useAuth } from '@/src/hooks/useAuth';
 import { seedPublishedMockArticles } from '@/src/services/article.service';
+import { seedDemoCommunities } from '@/src/services/community.service';
 import { seedPublishedMockCourses } from '@/src/services/course.service';
 
 export function useAdminSeed() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [seeding, setSeeding] = useState(false);
   const [seedMessage, setSeedMessage] = useState('');
   const [seedError, setSeedError] = useState('');
@@ -20,10 +21,20 @@ export function useAdminSeed() {
     try {
       const courses = await seedPublishedMockCourses(user.uid);
       const articles = await seedPublishedMockArticles(user.uid);
-      setSeedMessage(
-        `Demo: cursos ${courses.created} novos / ${courses.skipped} existentes · artigos ${articles.created} novos / ${articles.skipped} existentes.`,
+      const communities = await seedDemoCommunities(
+        user.uid,
+        profile?.name ?? 'Admin',
       );
-      return { courses, articles };
+      setSeedMessage(
+        [
+          `Cursos publicados ${courses.created}/${courses.skipped}`,
+          `fila cursos ${courses.pendingCreated}/${courses.pendingSkipped}`,
+          `artigos ${articles.created}/${articles.skipped}`,
+          `comunidades ${communities.created}/${communities.skipped}`,
+          `fila comunidades ${communities.pendingCreated}/${communities.pendingSkipped}`,
+        ].join(' · '),
+      );
+      return { courses, articles, communities };
     } catch (err) {
       setSeedError(
         err instanceof Error
@@ -34,7 +45,7 @@ export function useAdminSeed() {
     } finally {
       setSeeding(false);
     }
-  }, [user]);
+  }, [user, profile?.name]);
 
   return { seeding, seedMessage, seedError, runSeed };
 }

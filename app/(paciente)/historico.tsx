@@ -1,5 +1,7 @@
-import { HistoryScreen } from '@/src/screens';
+import { Redirect } from 'expo-router';
+import type { Href } from 'expo-router';
 
-export default function HistoricoRoute() {
-  return <HistoryScreen />;
+/** Histórico unificado na aba Check-in. */
+export default function HistoricoRedirect() {
+  return <Redirect href={'/(paciente)/checkin' as Href} />;
 }

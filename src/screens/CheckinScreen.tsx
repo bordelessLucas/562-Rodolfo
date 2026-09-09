@@ -1,30 +1,24 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 
 import {
   Button,
-  ChipMultiSelect,
   Container,
-  DateNavigator,
   InlineMessage,
   ScreenHeader,
-  SectionCard,
   Typography,
-  WellbeingScale,
 } from '@/src/components';
+import { CheckinFormModal } from '@/src/components/CheckinFormModal';
 import {
-  ACTIVITY_OPTIONS,
-  LIFESTYLE_OPTIONS,
-  MEDICATION_OPTIONS,
-  MEDICATION_SAFETY_NOTICE,
-  SUPPLEMENT_OPTIONS,
-  TREATMENT_OPTIONS,
   type BodyMeasurements,
+  type DailyCheckin,
   type WellbeingScores,
   createEmptyMeasurements,
   createEmptyWellbeing,
@@ -32,39 +26,71 @@ import {
 import { useAuth } from '@/src/hooks/useAuth';
 import {
   getCheckinByDate,
+  listCheckinsByUser,
   upsertCheckin,
 } from '@/src/services/checkin.service';
 import { colors, radius, space } from '@/src/theme';
 import {
   addDays,
-  isFutureDate,
+  formatDateLabel,
   toDateKey,
 } from '@/src/utils/navigation';
 
-const MEASUREMENT_FIELDS: {
-  key: keyof BodyMeasurements;
-  label: string;
-}[] = [
-  { key: 'ankleLeft', label: 'Tornozelo E (cm)' },
-  { key: 'ankleRight', label: 'Tornozelo D (cm)' },
-  { key: 'calfLeft', label: 'Panturrilha E (cm)' },
-  { key: 'calfRight', label: 'Panturrilha D (cm)' },
-  { key: 'kneeLeft', label: 'Joelho E (cm)' },
-  { key: 'kneeRight', label: 'Joelho D (cm)' },
-  { key: 'thighLeft', label: 'Coxa E (cm)' },
-  { key: 'thighRight', label: 'Coxa D (cm)' },
-  { key: 'upperArmLeft', label: 'Braço E (cm)' },
-  { key: 'upperArmRight', label: 'Braço D (cm)' },
-  { key: 'weight', label: 'Peso (kg)' },
+type PeriodFilter = '7' | '30' | '90' | 'all';
+type PainFilter = 'all' | 'with' | 'high';
+type FormMode = 'create' | 'edit' | 'view';
+
+const PERIOD_OPTIONS: { id: PeriodFilter; label: string }[] = [
+  { id: 'all', label: 'Todos' },
+  { id: '7', label: '7 dias' },
+  { id: '30', label: '30 dias' },
+  { id: '90', label: '90 dias' },
 ];
+
+const PAIN_OPTIONS: { id: PainFilter; label: string }[] = [
+  { id: 'all', label: 'Qualquer dor' },
+  { id: 'with', label: 'Com dor' },
+  { id: 'high', label: 'Dor 6+' },
+];
+
+function summaryChips(item: DailyCheckin): string[] {
+  const chips: string[] = [];
+  if (item.wellbeing.pain !== null) {
+    chips.push(`Dor ${item.wellbeing.pain}`);
+  }
+  if (item.wellbeing.energy !== null) {
+    chips.push(`Energia ${item.wellbeing.energy}`);
+  }
+  if (item.treatments.length > 0) {
+    chips.push(`${item.treatments.length} tratamento(s)`);
+  }
+  return chips;
+}
+
+function periodLabel(period: PeriodFilter): string {
+  return PERIOD_OPTIONS.find((item) => item.id === period)?.label ?? 'Todos';
+}
+
+function painLabel(pain: PainFilter): string {
+  return PAIN_OPTIONS.find((item) => item.id === pain)?.label ?? 'Qualquer dor';
+}
 
 export function CheckinScreen() {
   const { user } = useAuth();
-  const [dateKey, setDateKey] = useState(toDateKey(new Date()));
-  const [loading, setLoading] = useState(true);
+  const todayKey = toDateKey(new Date());
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [formMode, setFormMode] = useState<FormMode>('create');
+  const [dateKey, setDateKey] = useState(todayKey);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
+  const [history, setHistory] = useState<DailyCheckin[]>([]);
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
+  const [painFilter, setPainFilter] = useState<PainFilter>('all');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [treatments, setTreatments] = useState<string[]>([]);
   const [activities, setActivities] = useState<string[]>([]);
@@ -79,55 +105,128 @@ export function CheckinScreen() {
   );
   const [notes, setNotes] = useState('');
 
-  const load = useCallback(async () => {
+  const applyCheckinToForm = useCallback((existing: DailyCheckin | null) => {
+    if (existing) {
+      setTreatments(existing.treatments);
+      setActivities(existing.activities);
+      setLifestyle(existing.lifestyle);
+      setSupplements(existing.supplements);
+      setMedications(existing.medications);
+      setWellbeing(existing.wellbeing);
+      setMeasurements(existing.measurements);
+      setNotes(existing.notes);
+      return;
+    }
+    setTreatments([]);
+    setActivities([]);
+    setLifestyle([]);
+    setSupplements([]);
+    setMedications([]);
+    setWellbeing(createEmptyWellbeing());
+    setMeasurements(createEmptyMeasurements());
+    setNotes('');
+  }, []);
+
+  const loadHistory = useCallback(async () => {
     if (!user) {
       return;
     }
-
-    setLoading(true);
-    setError('');
-    setMessage('');
-
+    setHistoryLoading(true);
     try {
-      const existing = await getCheckinByDate(user.uid, dateKey);
-      if (existing) {
-        setTreatments(existing.treatments);
-        setActivities(existing.activities);
-        setLifestyle(existing.lifestyle);
-        setSupplements(existing.supplements);
-        setMedications(existing.medications);
-        setWellbeing(existing.wellbeing);
-        setMeasurements(existing.measurements);
-        setNotes(existing.notes);
-      } else {
-        setTreatments([]);
-        setActivities([]);
-        setLifestyle([]);
-        setSupplements([]);
-        setMedications([]);
-        setWellbeing(createEmptyWellbeing());
-        setMeasurements(createEmptyMeasurements());
-        setNotes('');
+      setHistory(await listCheckinsByUser(user.uid));
+    } catch {
+      setError('Não foi possível carregar o histórico.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadHistory();
+    }, [loadHistory]),
+  );
+
+  const todayCheckin = useMemo(
+    () => history.find((item) => item.date === todayKey) ?? null,
+    [history, todayKey],
+  );
+
+  const filteredHistory = useMemo(() => {
+    const minDate =
+      periodFilter === 'all'
+        ? null
+        : addDays(todayKey, -Number(periodFilter) + 1);
+
+    return history.filter((item) => {
+      if (minDate && item.date < minDate) {
+        return false;
+      }
+      if (painFilter === 'with' && item.wellbeing.pain === null) {
+        return false;
+      }
+      if (
+        painFilter === 'high' &&
+        (item.wellbeing.pain === null || item.wellbeing.pain < 6)
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [history, periodFilter, painFilter, todayKey]);
+
+  const openCreateToday = () => {
+    if (todayCheckin) {
+      return;
+    }
+    setFormMode('create');
+    setDateKey(todayKey);
+    applyCheckinToForm(null);
+    setFormError('');
+    setMessage('');
+    setModalOpen(true);
+  };
+
+  const openExisting = async (
+    item: DailyCheckin,
+    mode: 'view' | 'edit',
+  ) => {
+    setFormMode(mode);
+    setDateKey(item.date);
+    setFormError('');
+    setMessage('');
+    applyCheckinToForm(item);
+    setModalOpen(true);
+
+    if (!user) {
+      return;
+    }
+    try {
+      const fresh = await getCheckinByDate(user.uid, item.date);
+      if (fresh) {
+        applyCheckinToForm(fresh);
       }
     } catch {
-      setError('Não foi possível carregar o check-in deste dia.');
-    } finally {
-      setLoading(false);
+      // mantém dados da lista
     }
-  }, [user, dateKey]);
+  };
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const openViewExisting = (item: DailyCheckin) => {
+    void openExisting(item, 'view');
+  };
+
+  const openEditExisting = (item: DailyCheckin) => {
+    void openExisting(item, 'edit');
+  };
 
   const handleSave = async () => {
     if (!user) {
+      setFormError('Faça login novamente para salvar o check-in.');
       return;
     }
 
     setSaving(true);
-    setError('');
-    setMessage('');
+    setFormError('');
 
     try {
       await upsertCheckin({
@@ -142,189 +241,324 @@ export function CheckinScreen() {
         measurements,
         notes,
       });
-      setMessage('Check-in salvo com sucesso.');
-    } catch {
-      setError('Não foi possível salvar o check-in. Tente novamente.');
+      setModalOpen(false);
+      setMessage(
+        formMode === 'edit'
+          ? 'Check-in atualizado.'
+          : 'Check-in de hoje registrado.',
+      );
+      await loadHistory();
+    } catch (err) {
+      const code =
+        typeof err === 'object' &&
+        err !== null &&
+        'code' in err &&
+        typeof (err as { code: unknown }).code === 'string'
+          ? (err as { code: string }).code
+          : '';
+      if (code === 'permission-denied') {
+        setFormError('Sem permissão para salvar neste dia.');
+      } else {
+        setFormError(
+          err instanceof Error
+            ? err.message
+            : 'Não foi possível salvar o check-in.',
+        );
+      }
     } finally {
       setSaving(false);
     }
   };
 
-  const updateMeasurement = (key: keyof BodyMeasurements, raw: string) => {
-    const normalized = raw.replace(',', '.').trim();
-    if (!normalized) {
-      setMeasurements((prev) => ({ ...prev, [key]: null }));
-      return;
-    }
-    const parsed = Number(normalized);
-    setMeasurements((prev) => ({
-      ...prev,
-      [key]: Number.isFinite(parsed) ? parsed : prev[key],
-    }));
-  };
-
   return (
     <Container
       scroll
-      keyboardAvoiding
       edges={['top', 'left', 'right']}
       contentStyle={styles.content}
     >
       <ScreenHeader
         eyebrow="Diário"
         title="Check-in"
-        subtitle="Registre o que fizer sentido. Nenhuma seção é obrigatória."
+        subtitle="Registre o dia e acompanhe seus registros anteriores."
       />
 
-      <DateNavigator
-        dateKey={dateKey}
-        onPrevious={() => setDateKey((current) => addDays(current, -1))}
-        onNext={() => setDateKey((current) => addDays(current, 1))}
-        onToday={() => setDateKey(toDateKey(new Date()))}
-        disableNext={isFutureDate(addDays(dateKey, 1))}
-      />
-
-      {loading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator color={colors.primary} size="large" />
-          <Typography variant="caption" color={colors.textMuted}>
-            Carregando o dia…
-          </Typography>
-        </View>
-      ) : (
-        <>
-          <SectionCard title="Tratamentos">
-            <ChipMultiSelect
-              options={TREATMENT_OPTIONS}
-              selected={treatments}
-              onChange={setTreatments}
-            />
-          </SectionCard>
-
-          <SectionCard title="Atividades">
-            <ChipMultiSelect
-              options={ACTIVITY_OPTIONS}
-              selected={activities}
-              onChange={setActivities}
-            />
-          </SectionCard>
-
-          <SectionCard
-            title="Dieta e estilo de vida"
-            description="Opções iniciais — a lista oficial pode evoluir com o cliente."
+      <View style={styles.todayCard}>
+        <View style={styles.todayTop}>
+          <View style={styles.todayText}>
+            <Typography variant="caption" color={colors.secondary}>
+              Hoje · {formatDateLabel(todayKey)}
+            </Typography>
+            <Typography variant="h3">
+              {todayCheckin ? 'Check-in feito' : 'Ainda sem check-in'}
+            </Typography>
+            <Typography variant="body" color={colors.textMuted}>
+              {todayCheckin
+                ? 'Você já registrou hoje. Pode editar se precisar.'
+                : 'Reserve um momento para registrar como está se sentindo.'}
+            </Typography>
+          </View>
+          <View
+            style={[
+              styles.statusDot,
+              todayCheckin ? styles.statusDone : styles.statusPending,
+            ]}
           >
-            <ChipMultiSelect
-              options={LIFESTYLE_OPTIONS}
-              selected={lifestyle}
-              onChange={setLifestyle}
-            />
-          </SectionCard>
-
-          <SectionCard title="Suplementos e medicamentos">
-            <InlineMessage message={MEDICATION_SAFETY_NOTICE} variant="info" />
-            <Typography variant="label">Suplementos</Typography>
-            <ChipMultiSelect
-              options={SUPPLEMENT_OPTIONS}
-              selected={supplements}
-              onChange={setSupplements}
-            />
-            <Typography variant="label">Medicamentos</Typography>
-            <ChipMultiSelect
-              options={MEDICATION_OPTIONS}
-              selected={medications}
-              onChange={setMedications}
-            />
-          </SectionCard>
-
-          <SectionCard title="Bem-estar">
-            <WellbeingScale
-              label="Dor"
-              lowLabel="Nenhuma"
-              highLabel="Intensa"
-              value={wellbeing.pain}
-              onChange={(pain) => setWellbeing((prev) => ({ ...prev, pain }))}
-            />
-            <WellbeingScale
-              label="Sensação de peso"
-              lowLabel="Leve"
-              highLabel="Muito pesada"
-              value={wellbeing.heaviness}
-              onChange={(heaviness) =>
-                setWellbeing((prev) => ({ ...prev, heaviness }))
-              }
-            />
-            <WellbeingScale
-              label="Energia"
-              lowLabel="Exausto"
-              highLabel="Energizado"
-              value={wellbeing.energy}
-              onChange={(energy) =>
-                setWellbeing((prev) => ({ ...prev, energy }))
-              }
-            />
-            <WellbeingScale
-              label="Humor"
-              lowLabel="Ruim"
-              highLabel="Ótimo"
-              value={wellbeing.mood}
-              onChange={(mood) => setWellbeing((prev) => ({ ...prev, mood }))}
-            />
-          </SectionCard>
-
-          <SectionCard
-            title="Medidas"
-            description="Preencha só o que quiser. Entrada por voz virá depois."
-          >
-            <View style={styles.measureGrid}>
-              {MEASUREMENT_FIELDS.map((field) => (
-                <View key={field.key} style={styles.measureField}>
-                  <Typography variant="caption" color={colors.textMuted}>
-                    {field.label}
-                  </Typography>
-                  <TextInput
-                    keyboardType="decimal-pad"
-                    value={
-                      measurements[field.key] === null
-                        ? ''
-                        : String(measurements[field.key])
-                    }
-                    onChangeText={(text) =>
-                      updateMeasurement(field.key, text)
-                    }
-                    placeholder="—"
-                    placeholderTextColor={colors.textMuted}
-                    style={styles.measureInput}
-                  />
-                </View>
-              ))}
-            </View>
-          </SectionCard>
-
-          <SectionCard title="Observações">
-            <TextInput
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Como você se sentiu hoje..."
-              placeholderTextColor={colors.textMuted}
-              multiline
-              style={styles.notes}
-            />
-          </SectionCard>
-
-          {error ? <InlineMessage message={error} variant="error" /> : null}
-          {message ? (
-            <InlineMessage message={message} variant="success" />
-          ) : null}
-
-          <View style={styles.saveBlock}>
-            <Button
-              label="Salvar check-in"
-              loading={saving}
-              onPress={handleSave}
+            <Ionicons
+              name={todayCheckin ? 'checkmark' : 'time-outline'}
+              size={18}
+              color={todayCheckin ? colors.textOnPrimary : colors.primary}
             />
           </View>
-        </>
-      )}
+        </View>
+
+        {todayCheckin ? (
+          <>
+            {summaryChips(todayCheckin).length > 0 ? (
+              <View style={styles.chipRow}>
+                {summaryChips(todayCheckin).map((chip) => (
+                  <View key={chip} style={styles.metaChip}>
+                    <Typography variant="caption" color={colors.primary}>
+                      {chip}
+                    </Typography>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+            <Button
+              label="Editar check-in de hoje"
+              variant="outline"
+              onPress={() => openEditExisting(todayCheckin)}
+            />
+          </>
+        ) : (
+          <Button label="Fazer check-in de hoje" onPress={openCreateToday} />
+        )}
+      </View>
+
+      {error ? <InlineMessage message={error} variant="error" /> : null}
+      {message ? <InlineMessage message={message} variant="success" /> : null}
+
+      <View style={styles.historyHeader}>
+        <View style={styles.historyTitleRow}>
+          <View style={styles.historyTextBlock}>
+            <Typography variant="h3">Histórico</Typography>
+            <Typography variant="caption" color={colors.textMuted}>
+              Toque para ver · use Editar para alterar.
+            </Typography>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Abrir filtros do histórico"
+            onPress={() => setFiltersOpen((open) => !open)}
+            style={({ pressed }) => [
+              styles.filterToggle,
+              filtersOpen ? styles.filterToggleActive : null,
+              pressed ? styles.filterTogglePressed : null,
+            ]}
+          >
+            <Ionicons
+              name="options-outline"
+              size={18}
+              color={colors.primary}
+            />
+            <Typography variant="caption" color={colors.primary}>
+              Filtrar
+            </Typography>
+          </Pressable>
+        </View>
+
+        {(periodFilter !== 'all' || painFilter !== 'all') && !filtersOpen ? (
+          <Pressable
+            onPress={() => setFiltersOpen(true)}
+            style={styles.activeFilterHint}
+          >
+            <Typography variant="caption" color={colors.textMuted}>
+              {periodLabel(periodFilter)} · {painLabel(painFilter)}
+            </Typography>
+            <Typography variant="caption" color={colors.primary}>
+              Alterar
+            </Typography>
+          </Pressable>
+        ) : null}
+
+        {filtersOpen ? (
+          <View style={styles.filterPanel}>
+            <Typography variant="label">Período</Typography>
+            <View style={styles.segmentRow}>
+              {PERIOD_OPTIONS.map((option) => {
+                const selected = periodFilter === option.id;
+                return (
+                  <Pressable
+                    key={option.id}
+                    onPress={() => setPeriodFilter(option.id)}
+                    style={[
+                      styles.segment,
+                      selected ? styles.segmentSelected : null,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color={selected ? colors.textOnPrimary : colors.text}
+                      align="center"
+                    >
+                      {option.label}
+                    </Typography>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Typography variant="label">Dor</Typography>
+            <View style={styles.segmentRow}>
+              {PAIN_OPTIONS.map((option) => {
+                const selected = painFilter === option.id;
+                return (
+                  <Pressable
+                    key={option.id}
+                    onPress={() => setPainFilter(option.id)}
+                    style={[
+                      styles.segment,
+                      selected ? styles.segmentSelected : null,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color={selected ? colors.textOnPrimary : colors.text}
+                      align="center"
+                    >
+                      {option.label}
+                    </Typography>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.filterActions}>
+              <Pressable
+                onPress={() => {
+                  setPeriodFilter('all');
+                  setPainFilter('all');
+                }}
+                hitSlop={8}
+              >
+                <Typography variant="caption" color={colors.textMuted}>
+                  Limpar
+                </Typography>
+              </Pressable>
+              <Pressable onPress={() => setFiltersOpen(false)} hitSlop={8}>
+                <Typography variant="caption" color={colors.primary}>
+                  Pronto
+                </Typography>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+      </View>
+
+      {historyLoading ? (
+        <ActivityIndicator color={colors.primary} style={styles.loader} />
+      ) : null}
+
+      {!historyLoading && filteredHistory.length === 0 ? (
+        <InlineMessage
+          message="Nenhum registro neste filtro."
+          variant="info"
+        />
+      ) : null}
+
+      {filteredHistory.map((item) => {
+        const chips = summaryChips(item);
+        const isToday = item.date === todayKey;
+
+        return (
+          <Pressable
+            key={item.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Ver check-in de ${formatDateLabel(item.date)}`}
+            onPress={() => openViewExisting(item)}
+            style={({ pressed }) => [
+              styles.historyCard,
+              isToday ? styles.historyToday : null,
+              pressed ? styles.historyPressed : null,
+            ]}
+          >
+            <View style={styles.historyTop}>
+              <View style={styles.historyText}>
+                <Typography variant="h3">
+                  {formatDateLabel(item.date)}
+                </Typography>
+                <Typography variant="caption" color={colors.success}>
+                  Registrado · toque para ver
+                </Typography>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Editar check-in de ${formatDateLabel(item.date)}`}
+                onPress={(event) => {
+                  event.stopPropagation?.();
+                  openEditExisting(item);
+                }}
+                hitSlop={8}
+                style={({ pressed }) => [
+                  styles.editBadge,
+                  pressed ? styles.editBadgePressed : null,
+                ]}
+              >
+                <Ionicons
+                  name="create-outline"
+                  size={16}
+                  color={colors.primary}
+                />
+                <Typography variant="caption" color={colors.primary}>
+                  Editar
+                </Typography>
+              </Pressable>
+            </View>
+            {chips.length > 0 ? (
+              <View style={styles.chipRow}>
+                {chips.slice(0, 3).map((chip) => (
+                  <View key={chip} style={styles.metaChip}>
+                    <Typography variant="caption" color={colors.primary}>
+                      {chip}
+                    </Typography>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </Pressable>
+        );
+      })}
+
+      <CheckinFormModal
+        visible={modalOpen}
+        mode={formMode}
+        dateKey={dateKey}
+        treatments={treatments}
+        activities={activities}
+        lifestyle={lifestyle}
+        supplements={supplements}
+        medications={medications}
+        wellbeing={wellbeing}
+        measurements={measurements}
+        notes={notes}
+        onTreatments={setTreatments}
+        onActivities={setActivities}
+        onLifestyle={setLifestyle}
+        onSupplements={setSupplements}
+        onMedications={setMedications}
+        onWellbeing={setWellbeing}
+        onMeasurements={setMeasurements}
+        onNotes={setNotes}
+        saving={saving}
+        error={formError}
+        onSave={handleSave}
+        onClose={() => setModalOpen(false)}
+        onStartEdit={() => setFormMode('edit')}
+      />
     </Container>
   );
 }
@@ -334,46 +568,156 @@ const styles = StyleSheet.create({
     gap: space[4],
     paddingBottom: space[8],
   },
-  loading: {
-    paddingVertical: space[8],
+  todayCard: {
+    gap: space[4],
+    padding: space[5],
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  todayTop: {
+    flexDirection: 'row',
+    gap: space[3],
+    alignItems: 'flex-start',
+  },
+  todayText: {
+    flex: 1,
+    gap: space[1],
+  },
+  statusDot: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusDone: {
+    backgroundColor: colors.primary,
+  },
+  statusPending: {
+    backgroundColor: colors.backgroundAccent,
+  },
+  historyHeader: {
+    gap: space[3],
+    marginTop: space[1],
+  },
+  historyTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space[3],
+  },
+  historyTextBlock: {
+    flex: 1,
+    gap: space[1],
+  },
+  filterToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: space[3],
+    paddingVertical: space[2],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  filterToggleActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.backgroundAccent,
+  },
+  filterTogglePressed: {
+    opacity: 0.9,
+  },
+  activeFilterHint: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: space[3],
+    paddingVertical: space[2],
+    borderRadius: radius.md,
+    backgroundColor: colors.backgroundAccent,
+  },
+  filterPanel: {
+    gap: space[3],
+    padding: space[4],
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  segmentRow: {
+    flexDirection: 'row',
+    gap: space[1],
+  },
+  segment: {
+    flex: 1,
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: space[1],
+    borderRadius: radius.sm,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  segmentSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: space[1],
+  },
+  loader: {
+    marginVertical: space[4],
+  },
+  historyCard: {
+    gap: space[2],
+    padding: space[4],
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  historyToday: {
+    borderColor: colors.primary,
+  },
+  historyPressed: {
+    backgroundColor: colors.backgroundAccent,
+  },
+  historyTop: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: space[3],
   },
-  measureGrid: {
+  historyText: {
+    flex: 1,
+    gap: 2,
+  },
+  editBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: space[2],
+    paddingVertical: space[1],
+    borderRadius: radius.sm,
+    backgroundColor: colors.backgroundAccent,
+  },
+  editBadgePressed: {
+    opacity: 0.85,
+  },
+  chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: space[3],
+    gap: space[2],
   },
-  measureField: {
-    width: '47%',
-    gap: space[1],
-  },
-  measureInput: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
+  metaChip: {
+    backgroundColor: colors.backgroundAccent,
     paddingHorizontal: space[3],
-    color: colors.text,
-    backgroundColor: colors.background,
-    fontFamily: 'SourceSans3_400Regular',
-    fontSize: 16,
-  },
-  notes: {
-    minHeight: 120,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: space[4],
-    textAlignVertical: 'top',
-    color: colors.text,
-    backgroundColor: colors.background,
-    fontFamily: 'SourceSans3_400Regular',
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  saveBlock: {
-    paddingTop: space[2],
-    paddingBottom: space[4],
+    paddingVertical: space[1],
+    borderRadius: radius.sm,
   },
 });

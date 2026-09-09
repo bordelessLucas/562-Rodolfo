@@ -10,6 +10,7 @@ export type WellbeingScaleProps = {
   highLabel: string;
   value: number | null;
   onChange: (value: number) => void;
+  disabled?: boolean;
 };
 
 const SCALE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
@@ -20,6 +21,7 @@ export function WellbeingScale({
   highLabel,
   value,
   onChange,
+  disabled = false,
 }: WellbeingScaleProps) {
   return (
     <View style={styles.wrapper}>
@@ -31,13 +33,15 @@ export function WellbeingScale({
             <Pressable
               key={item}
               accessibilityRole="button"
-              accessibilityState={{ selected }}
+              accessibilityState={{ selected, disabled }}
               accessibilityLabel={`${label}: ${item}`}
+              disabled={disabled}
               onPress={() => onChange(item)}
               style={({ pressed }) => [
                 styles.cell,
                 selected && styles.cellSelected,
-                pressed && styles.cellPressed,
+                pressed && !disabled && styles.cellPressed,
+                disabled && !selected && styles.cellDisabled,
               ]}
             >
               <Typography
@@ -91,6 +95,9 @@ const styles = StyleSheet.create({
   },
   cellPressed: {
     opacity: 0.9,
+  },
+  cellDisabled: {
+    opacity: 0.55,
   },
   legend: {
     flexDirection: 'row',

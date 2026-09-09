@@ -55,12 +55,12 @@ export default function PacienteLayout() {
           }}
         />
         <Tabs.Screen
-          name="historico"
+          name="comunidade"
           options={{
-            title: 'Histórico',
+            title: 'Comunidade',
             tabBarIcon: ({ color, focused }) => (
               <Ionicons
-                name={focused ? 'time' : 'time-outline'}
+                name={focused ? 'people' : 'people-outline'}
                 color={color}
                 size={22}
               />
@@ -91,6 +91,13 @@ export default function PacienteLayout() {
                 size={22}
               />
             ),
+          }}
+        />
+        <Tabs.Screen
+          name="historico"
+          options={{
+            href: null,
+            title: 'Histórico',
           }}
         />
         <Tabs.Screen

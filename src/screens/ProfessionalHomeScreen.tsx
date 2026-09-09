@@ -69,6 +69,16 @@ export function ProfessionalHomeScreen() {
         />
       </SectionCard>
 
+      <SectionCard
+        title="Comunidades"
+        description="Solicite grupos temáticos. Um admin precisa aprovar antes de publicar."
+      >
+        <Button
+          label="Solicitar / ver comunidades"
+          onPress={() => router.push('/(profissional)/comunidades' as Href)}
+        />
+      </SectionCard>
+
       <View style={styles.actions}>
         <Button
           label="Abrir perfil"

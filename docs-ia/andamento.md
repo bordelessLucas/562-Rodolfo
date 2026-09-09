@@ -1,6 +1,6 @@
 # Andamento do Projeto — Backend × Frontend
 
-> Documento vivo. Atualizado em **08/09/2026** (home paciente + Explorar filtros + artigos/notícias).  
+> Documento vivo. Atualizado em **09/09/2026** (check-in unificado + comunidade base).  
 > **Não redefine escopo** — só registra o que já foi feito e o que ainda falta.
 
 ---
@@ -9,14 +9,14 @@
 
 | Camada | Progresso estimado | Situação |
 |--------|-------------------|----------|
-| **Frontend** | ~78% | + **Home paciente** + Explorar busca/filtros + artigos |
-| **Backend** | ~74% | + `contentArticles` (rules/indexes) |
-| **Diário / Check-in** | Spec ✅ · MVP ✅ | Home: CTA + semana 7 dias |
-| **Cursos / mentoria** | Spec ✅ · Base ✅ | URLs mock; sem Storage; R4 biblioteca avulsa ainda não |
-| **Conteúdo singular** | Base ✅ | Notícias / pesquisas / artigos (`contentArticles`) |
+| **Frontend** | ~82% | + Check-in+histórico unificados · **Comunidade base** |
+| **Backend** | ~78% | + `communities` / members / posts / comments |
+| **Diário / Check-in** | Spec ✅ · MVP ✅ | Form + histórico + filtros na mesma tab |
+| **Cursos / mentoria** | Spec ✅ · Base ✅ | URLs mock; sem Storage |
+| **Conteúdo singular** | Base ✅ | Notícias / pesquisas / artigos |
+| **Comunidade** | Spec ✅ · Base ✅ | Grupos + aprovação; posts/comentários MVP |
 | **Diagnóstico inicial** | Spec ✅ · Código 0% | Aguarda fase R3 |
-| **Comunidade** | Spec ✅ · Código 0% | Stub residual (filtro Explorar cobre artigos) |
-| **Área profissional** | Shell ✅ · Back vínculo ✅ · **UI vínculos ✅** · UI cursos ✅ | |
+| **Área profissional** | Shell ✅ · vínculos ✅ · cursos ✅ · solicitar comunidade ✅ | |
 
 ---
 
@@ -28,7 +28,7 @@
 - [x] UI vínculos profissional ↔ paciente (back já pronto)
 - [ ] **R3** Diagnóstico inicial *(gate: campos oficiais)*
 - [ ] **R4** Biblioteca avulsa de vídeos *(gate: hospedagem)* — cursos já usam `videoUrl` mock
-- [ ] **R6** Comunidade *(gate: moderação)*
+- [x] **R6** Comunidade base (grupos + aprovação + posts/comentários) — moderação avançada TBD
 - [ ] **R7** Monetização do diário *(gate: modelo)*
 - [ ] **R8** features extras do profissional *(gate cliente)*
 - [ ] **R9** Voz / tendências / IA *(gate IA)*
@@ -51,7 +51,7 @@
 | 3. Cursos/mentoria | ✅ | ✅ base (catálogo, módulos, aulas, progresso, aprovação) |
 | 4. Vídeos pacientes (biblioteca) | ✅ | ❌ (só aulas em curso) |
 | 5. Diagnóstico inicial | ✅ | ❌ |
-| 6. Comunidade | ✅ | ❌ (stub) |
+| 6. Comunidade | ✅ | ✅ base (grupos + feed; moderação TBD) |
 | 7. Integração | ✅ | Parcial |
 | Diário + monetização | ✅ | Diário MVP ✅ · paywall ❌ |
 | Área profissional | ✅ existência | Back + **UI vínculos** ✅ · submissão de cursos ✅ · extras TBD |
@@ -61,7 +61,7 @@
 ## BACKEND ✅ recente
 - `course.service` + `courseProgress.service` + `article.service`
 - Rules/indexes `courses`, `lessonProgress`, `contentArticles` (+ role `admin`) deployados
-- Seed mock via admin (cursos + artigos)
+- Seed mock via admin (cursos + artigos + comunidades; filas pending incluídas)
 - Vínculos profissional (anterior)
 
 ---
@@ -72,7 +72,7 @@
 - Paciente: detalhe de artigo; catálogo de cursos com busca/filtros
 - Paciente: Perfil → **Profissionais vinculados**
 - Profissional: Meus cursos / criar / enviar aprovação · **Meus pacientes**
-- Admin: seed, publicar curso/artigo, fila aprovar/rejeitar
+- Admin: seed, publicar curso/artigo, fila aprovar/rejeitar (+ histórico do submetente em comunidades)
 - Shell `/(admin)`
 
 ---

@@ -18,6 +18,7 @@ export default function ProfissionalLayout() {
         <Stack.Screen name="perfil" />
         <Stack.Screen name="cursos" />
         <Stack.Screen name="pacientes" />
+        <Stack.Screen name="comunidades" />
       </Stack>
     </RoleGate>
   );

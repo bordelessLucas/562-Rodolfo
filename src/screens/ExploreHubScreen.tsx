@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -34,8 +34,13 @@ const FILTERS: { id: ExploreFilter; label: string }[] = [
   { id: 'artigo', label: 'Artigos' },
 ];
 
+function filterLabel(filter: ExploreFilter): string {
+  return FILTERS.find((item) => item.id === filter)?.label ?? 'Todos';
+}
+
 export function ExploreHubScreen() {
   const router = useRouter();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const {
     items,
     loading,
@@ -47,6 +52,8 @@ export function ExploreHubScreen() {
     filter,
     setFilter,
   } = useExploreFeed();
+
+  const hasActiveFilter = filter !== 'todos';
 
   return (
     <Container
@@ -69,18 +76,76 @@ export function ExploreHubScreen() {
         autoCapitalize="none"
       />
 
-      <View style={styles.filters}>
-        <Typography variant="label">Filtrar</Typography>
-        <SelectableChipGroup>
-          {FILTERS.map((item) => (
-            <SelectableChip
-              key={item.id}
-              label={item.label}
-              selected={filter === item.id}
-              onPress={() => setFilter(item.id)}
+      <View style={styles.filtersBlock}>
+        <View style={styles.filtersHeader}>
+          <Typography variant="caption" color={colors.textMuted}>
+            Resultados da busca e do tipo selecionado.
+          </Typography>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Abrir filtros de conteúdo"
+            onPress={() => setFiltersOpen((open) => !open)}
+            style={({ pressed }) => [
+              styles.filterToggle,
+              filtersOpen ? styles.filterToggleActive : null,
+              pressed ? styles.filterTogglePressed : null,
+            ]}
+          >
+            <Ionicons
+              name="options-outline"
+              size={18}
+              color={colors.primary}
             />
-          ))}
-        </SelectableChipGroup>
+            <Typography variant="caption" color={colors.primary}>
+              Filtrar
+            </Typography>
+          </Pressable>
+        </View>
+
+        {hasActiveFilter && !filtersOpen ? (
+          <Pressable
+            onPress={() => setFiltersOpen(true)}
+            style={styles.activeFilterHint}
+          >
+            <Typography variant="caption" color={colors.textMuted}>
+              Tipo: {filterLabel(filter)}
+            </Typography>
+            <Typography variant="caption" color={colors.primary}>
+              Alterar
+            </Typography>
+          </Pressable>
+        ) : null}
+
+        {filtersOpen ? (
+          <View style={styles.filterPanel}>
+            <Typography variant="label">Tipo</Typography>
+            <SelectableChipGroup>
+              {FILTERS.map((item) => (
+                <SelectableChip
+                  key={item.id}
+                  label={item.label}
+                  selected={filter === item.id}
+                  onPress={() => setFilter(item.id)}
+                />
+              ))}
+            </SelectableChipGroup>
+            <View style={styles.filterActions}>
+              <Pressable
+                onPress={() => setFilter('todos')}
+                hitSlop={8}
+              >
+                <Typography variant="caption" color={colors.textMuted}>
+                  Limpar
+                </Typography>
+              </Pressable>
+              <Pressable onPress={() => setFiltersOpen(false)} hitSlop={8}>
+                <Typography variant="caption" color={colors.primary}>
+                  Pronto
+                </Typography>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
       </View>
 
       {error ? <InlineMessage message={error} variant="error" /> : null}
@@ -152,8 +217,55 @@ const styles = StyleSheet.create({
     gap: space[4],
     paddingBottom: space[8],
   },
-  filters: {
-    gap: space[2],
+  filtersBlock: {
+    gap: space[3],
+  },
+  filtersHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space[3],
+  },
+  filterToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: space[3],
+    paddingVertical: space[2],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  filterToggleActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.backgroundAccent,
+  },
+  filterTogglePressed: {
+    opacity: 0.9,
+  },
+  activeFilterHint: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: space[3],
+    paddingVertical: space[2],
+    borderRadius: radius.md,
+    backgroundColor: colors.backgroundAccent,
+  },
+  filterPanel: {
+    gap: space[3],
+    padding: space[4],
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  filterActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: space[1],
   },
   card: {
     gap: space[2],

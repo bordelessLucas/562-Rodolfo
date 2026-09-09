@@ -11,6 +11,7 @@ export type ChipMultiSelectProps = {
   onChange: (next: string[]) => void;
   allowCustom?: boolean;
   customLabel?: string;
+  disabled?: boolean;
 };
 
 export function ChipMultiSelect({
@@ -19,6 +20,7 @@ export function ChipMultiSelect({
   onChange,
   allowCustom = true,
   customLabel = '+ Outros',
+  disabled = false,
 }: ChipMultiSelectProps) {
   const [customOpen, setCustomOpen] = useState(false);
   const [customValue, setCustomValue] = useState('');
@@ -29,6 +31,9 @@ export function ChipMultiSelect({
   );
 
   const toggle = (item: string) => {
+    if (disabled) {
+      return;
+    }
     if (selected.includes(item)) {
       onChange(selected.filter((value) => value !== item));
       return;
@@ -37,6 +42,9 @@ export function ChipMultiSelect({
   };
 
   const addCustom = () => {
+    if (disabled) {
+      return;
+    }
     const value = customValue.trim();
     if (!value) {
       return;
@@ -57,6 +65,7 @@ export function ChipMultiSelect({
             label={option}
             selected={selected.includes(option)}
             onPress={() => toggle(option)}
+            disabled={disabled}
           />
         ))}
         {customItems.map((item) => (
@@ -65,9 +74,10 @@ export function ChipMultiSelect({
             label={item}
             selected
             onPress={() => toggle(item)}
+            disabled={disabled}
           />
         ))}
-        {allowCustom ? (
+        {allowCustom && !disabled ? (
           <SelectableChip
             label={customLabel}
             selected={customOpen}
@@ -76,7 +86,7 @@ export function ChipMultiSelect({
         ) : null}
       </SelectableChipGroup>
 
-      {customOpen ? (
+      {customOpen && !disabled ? (
         <View style={styles.customRow}>
           <TextInput
             value={customValue}

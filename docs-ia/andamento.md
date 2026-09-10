@@ -1,6 +1,6 @@
 # Andamento do Projeto — Backend × Frontend
 
-> Documento vivo. Atualizado em **09/09/2026** (check-in unificado + comunidade base).  
+> Documento vivo. Atualizado em **10/09/2026** (comunidades v2: hub, posts ricos, privacidade).  
 > **Não redefine escopo** — só registra o que já foi feito e o que ainda falta.
 
 ---
@@ -9,12 +9,12 @@
 
 | Camada | Progresso estimado | Situação |
 |--------|-------------------|----------|
-| **Frontend** | ~82% | + Check-in+histórico unificados · **Comunidade base** |
-| **Backend** | ~78% | + `communities` / members / posts / comments |
+| **Frontend** | ~86% | + Comunidades v2 (hub/feed/posts) |
+| **Backend** | ~82% | + policies, likes, replies, memberships CG |
 | **Diário / Check-in** | Spec ✅ · MVP ✅ | Form + histórico + filtros na mesma tab |
 | **Cursos / mentoria** | Spec ✅ · Base ✅ | URLs mock; sem Storage |
 | **Conteúdo singular** | Base ✅ | Notícias / pesquisas / artigos |
-| **Comunidade** | Spec ✅ · Base ✅ | Grupos + aprovação; posts/comentários MVP |
+| **Comunidade** | Spec ✅ · **v2+** | Hub, posts sociais, policies, **entrada com aprovação** |
 | **Diagnóstico inicial** | Spec ✅ · Código 0% | Aguarda fase R3 |
 | **Área profissional** | Shell ✅ · vínculos ✅ · cursos ✅ · solicitar comunidade ✅ | |
 
@@ -28,7 +28,7 @@
 - [x] UI vínculos profissional ↔ paciente (back já pronto)
 - [ ] **R3** Diagnóstico inicial *(gate: campos oficiais)*
 - [ ] **R4** Biblioteca avulsa de vídeos *(gate: hospedagem)* — cursos já usam `videoUrl` mock
-- [x] **R6** Comunidade base (grupos + aprovação + posts/comentários) — moderação avançada TBD
+- [x] **R6** Comunidade base + **v2** (hub, posts ricos, privacidade) — denúncia/Storage TBD
 - [ ] **R7** Monetização do diário *(gate: modelo)*
 - [ ] **R8** features extras do profissional *(gate cliente)*
 - [ ] **R9** Voz / tendências / IA *(gate IA)*
@@ -51,7 +51,7 @@
 | 3. Cursos/mentoria | ✅ | ✅ base (catálogo, módulos, aulas, progresso, aprovação) |
 | 4. Vídeos pacientes (biblioteca) | ✅ | ❌ (só aulas em curso) |
 | 5. Diagnóstico inicial | ✅ | ❌ |
-| 6. Comunidade | ✅ | ✅ base (grupos + feed; moderação TBD) |
+| 6. Comunidade | ✅ | ✅ **v2** (hub, capa, posts, like, replies, policies) |
 | 7. Integração | ✅ | Parcial |
 | Diário + monetização | ✅ | Diário MVP ✅ · paywall ❌ |
 | Área profissional | ✅ existência | Back + **UI vínculos** ✅ · submissão de cursos ✅ · extras TBD |

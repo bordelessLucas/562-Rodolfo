@@ -1,35 +1,82 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import type { FeedPostItem } from '@/src/components/SocialFeedPost';
 import type {
   Community,
-  CommunityComment,
+  CommunityMember,
   CommunityPost,
+} from '@/src/domain/community';
+import {
+  canUserAccessByPolicy,
+  isActiveMembership,
 } from '@/src/domain/community';
 import { useAuth } from '@/src/hooks/useAuth';
 import {
-  createCommunityPost,
-  createPostComment,
+  approveMember,
   getCommunityById,
   getMembership,
+  hasLikedPost,
   joinCommunity,
   leaveCommunity,
   listCommunityPosts,
+  listPendingMembers,
   listPostComments,
+  rejectMember,
+  togglePostLike,
 } from '@/src/services/community.service';
 
 export function useCommunityDetail(communityId: string | undefined) {
   const { user, profile } = useAuth();
   const [community, setCommunity] = useState<Community | null>(null);
-  const [isMember, setIsMember] = useState(false);
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
-  const [commentsByPost, setCommentsByPost] = useState<
-    Record<string, CommunityComment[]>
-  >({});
+  const [membership, setMembership] = useState<CommunityMember | null>(null);
+  const [pendingMembers, setPendingMembers] = useState<CommunityMember[]>([]);
+  const [feed, setFeed] = useState<FeedPostItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [posting, setPosting] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [moderatingId, setModeratingId] = useState<string | null>(null);
+  const [likeBusyId, setLikeBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+
+  const isOwner = Boolean(
+    community && user && community.createdBy === user.uid,
+  );
+  const isMember = isActiveMembership(membership);
+  const isPendingJoin = membership?.status === 'pending';
+
+  const loadFeed = useCallback(
+    async (posts: CommunityPost[], uid: string | undefined) => {
+      const items = await Promise.all(
+        posts.map(async (post) => {
+          try {
+            const [previewComments, liked] = await Promise.all([
+              listPostComments(post.communityId, post.id),
+              uid
+                ? hasLikedPost({
+                    communityId: post.communityId,
+                    postId: post.id,
+                    userId: uid,
+                  })
+                : Promise.resolve(false),
+            ]);
+            return {
+              post,
+              liked,
+              previewComments: previewComments.slice(0, 4),
+            } satisfies FeedPostItem;
+          } catch {
+            return {
+              post,
+              liked: false,
+              previewComments: [],
+            } satisfies FeedPostItem;
+          }
+        }),
+      );
+      setFeed(items);
+    },
+    [],
+  );
 
   const refresh = useCallback(async () => {
     if (!communityId) {
@@ -41,31 +88,42 @@ export function useCommunityDetail(communityId: string | undefined) {
       const next = await getCommunityById(communityId);
       setCommunity(next);
       if (!next) {
-        setIsMember(false);
-        setPosts([]);
+        setMembership(null);
+        setPendingMembers([]);
+        setFeed([]);
         return;
       }
+
+      let nextMembership: CommunityMember | null = null;
       if (user) {
-        const membership = await getMembership(communityId, user.uid);
-        setIsMember(Boolean(membership));
-        if (membership) {
-          const nextPosts = await listCommunityPosts(communityId);
-          setPosts(nextPosts);
-          const commentEntries = await Promise.all(
-            nextPosts.slice(0, 12).map(async (post) => {
-              const comments = await listPostComments(communityId, post.id);
-              return [post.id, comments] as const;
-            }),
-          );
-          setCommentsByPost(Object.fromEntries(commentEntries));
-        } else {
-          setPosts([]);
-          setCommentsByPost({});
+        nextMembership = await getMembership(communityId, user.uid);
+        setMembership(nextMembership);
+      } else {
+        setMembership(null);
+      }
+
+      const owner =
+        Boolean(user && next.createdBy === user.uid) ||
+        profile?.role === 'admin';
+      if (owner) {
+        try {
+          setPendingMembers(await listPendingMembers(communityId));
+        } catch {
+          setPendingMembers([]);
         }
       } else {
-        setIsMember(false);
-        setPosts([]);
-        setCommentsByPost({});
+        setPendingMembers([]);
+      }
+
+      const canSeeFeed =
+        isActiveMembership(nextMembership) ||
+        Boolean(user && next.createdBy === user.uid) ||
+        profile?.role === 'admin';
+      if (canSeeFeed && user) {
+        const posts = await listCommunityPosts(communityId);
+        await loadFeed(posts, user.uid);
+      } else {
+        setFeed([]);
       }
     } catch (err) {
       setError(
@@ -76,11 +134,30 @@ export function useCommunityDetail(communityId: string | undefined) {
     } finally {
       setLoading(false);
     }
-  }, [communityId, user]);
+  }, [communityId, user, profile?.role, loadFeed]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const canPost = useMemo(() => {
+    if (!community || !user || !profile) {
+      return false;
+    }
+    if (
+      !isMember &&
+      community.createdBy !== user.uid &&
+      profile.role !== 'admin'
+    ) {
+      return false;
+    }
+    return canUserAccessByPolicy({
+      policy: community.postPolicy,
+      userId: user.uid,
+      userRole: profile.role,
+      ownerId: community.createdBy,
+    });
+  }, [community, user, profile, isMember]);
 
   const join = useCallback(async () => {
     if (!user || !communityId || !profile) {
@@ -90,12 +167,16 @@ export function useCommunityDetail(communityId: string | undefined) {
     setError('');
     setMessage('');
     try {
-      await joinCommunity({
+      const result = await joinCommunity({
         communityId,
         userId: user.uid,
         userName: profile.name,
       });
-      setMessage('Você entrou na comunidade.');
+      setMessage(
+        result === 'pending'
+          ? 'Solicitação enviada. Aguarde a aprovação do dono do grupo.'
+          : 'Você entrou na comunidade.',
+      );
       await refresh();
     } catch (err) {
       setError(
@@ -114,88 +195,124 @@ export function useCommunityDetail(communityId: string | undefined) {
     setError('');
     try {
       await leaveCommunity({ communityId, userId: user.uid });
-      setMessage('Você saiu da comunidade.');
+      setMessage(
+        membership?.status === 'pending'
+          ? 'Solicitação cancelada.'
+          : 'Você saiu da comunidade.',
+      );
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível sair.');
     } finally {
       setJoining(false);
     }
-  }, [user, communityId, refresh]);
+  }, [user, communityId, membership?.status, refresh]);
 
-  const publishPost = useCallback(
-    async (body: string) => {
-      if (!user || !communityId || !profile) {
+  const approve = useCallback(
+    async (memberId: string) => {
+      if (!user || !communityId) {
         return;
       }
-      const trimmed = body.trim();
-      if (!trimmed) {
-        setError('Escreva uma mensagem antes de publicar.');
-        return;
-      }
-      setPosting(true);
+      setModeratingId(memberId);
       setError('');
       try {
-        await createCommunityPost({
+        await approveMember({
           communityId,
-          authorId: user.uid,
-          authorName: profile.name,
-          body: trimmed,
+          memberId,
+          reviewerId: user.uid,
         });
-        setMessage('Publicação enviada.');
+        setMessage('Solicitação aprovada.');
         await refresh();
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : 'Falha ao publicar.',
+          err instanceof Error ? err.message : 'Falha ao aprovar.',
         );
       } finally {
-        setPosting(false);
+        setModeratingId(null);
       }
     },
-    [user, communityId, profile, refresh],
+    [user, communityId, refresh],
   );
 
-  const publishComment = useCallback(
-    async (postId: string, body: string) => {
-      if (!user || !communityId || !profile) {
+  const reject = useCallback(
+    async (memberId: string) => {
+      if (!user || !communityId) {
         return;
       }
-      const trimmed = body.trim();
-      if (!trimmed) {
-        return;
-      }
+      setModeratingId(memberId);
+      setError('');
       try {
-        await createPostComment({
+        await rejectMember({
           communityId,
-          postId,
-          authorId: user.uid,
-          authorName: profile.name,
-          body: trimmed,
+          memberId,
+          reviewerId: user.uid,
         });
+        setMessage('Solicitação recusada.');
         await refresh();
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : 'Falha ao comentar.',
+          err instanceof Error ? err.message : 'Falha ao recusar.',
         );
+      } finally {
+        setModeratingId(null);
       }
     },
-    [user, communityId, profile, refresh],
+    [user, communityId, refresh],
+  );
+
+  const toggleLike = useCallback(
+    async (postId: string) => {
+      if (!user || !communityId) {
+        return;
+      }
+      setLikeBusyId(postId);
+      setError('');
+      try {
+        const result = await togglePostLike({
+          communityId,
+          postId,
+          userId: user.uid,
+        });
+        setFeed((prev) =>
+          prev.map((item) =>
+            item.post.id === postId
+              ? {
+                  ...item,
+                  liked: result.liked,
+                  post: { ...item.post, likeCount: result.likeCount },
+                }
+              : item,
+          ),
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Falha ao curtir.');
+      } finally {
+        setLikeBusyId(null);
+      }
+    },
+    [user, communityId],
   );
 
   return {
     community,
+    membership,
     isMember,
-    posts,
-    commentsByPost,
+    isPendingJoin,
+    isOwner,
+    pendingMembers,
+    feed,
+    canPost,
     loading,
-    posting,
     joining,
+    moderatingId,
+    likeBusyId,
     error,
     message,
     refresh,
     join,
     leave,
-    publishPost,
-    publishComment,
+    approve,
+    reject,
+    toggleLike,
   };
 }

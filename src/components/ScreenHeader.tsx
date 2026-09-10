@@ -12,6 +12,8 @@ export type ScreenHeaderProps = {
   /** Quando informado, exibe botão voltar acima do título. */
   onBack?: () => void;
   backLabel?: string;
+  /** Título menor (h2) para telas internas da stack. */
+  compact?: boolean;
 };
 
 export function ScreenHeader({
@@ -20,6 +22,7 @@ export function ScreenHeader({
   subtitle,
   onBack,
   backLabel = 'Voltar',
+  compact = false,
 }: ScreenHeaderProps) {
   return (
     <View style={styles.wrapper}>
@@ -49,7 +52,10 @@ export function ScreenHeader({
           {eyebrow}
         </Typography>
       ) : null}
-      <Typography variant="h1" accessibilityRole="header">
+      <Typography
+        variant={compact ? 'h2' : 'h1'}
+        accessibilityRole="header"
+      >
         {title}
       </Typography>
       {subtitle ? (

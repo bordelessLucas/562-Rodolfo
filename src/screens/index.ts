@@ -23,6 +23,8 @@ export { PatientHomeScreen } from './PatientHomeScreen';
 export { ArticleDetailScreen } from './ArticleDetailScreen';
 export { CommunitiesHubScreen } from './CommunitiesHubScreen';
 export { CommunityDetailScreen } from './CommunityDetailScreen';
+export { CommunityPostComposerScreen } from './CommunityPostComposerScreen';
+export { CommunityPostDetailScreen } from './CommunityPostDetailScreen';
 export { AdminCommunityCreateScreen } from './AdminCommunityCreateScreen';
 export { AdminCommunityReviewScreen } from './AdminCommunityReviewScreen';
 export { AdminCommunitySubmitterScreen } from './AdminCommunitySubmitterScreen';

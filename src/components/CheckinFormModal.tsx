@@ -17,13 +17,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  Button,
-  ChipMultiSelect,
-  InlineMessage,
-  Typography,
-  WellbeingScale,
-} from '@/src/components';
+import { Button } from '@/src/components/Button';
+import { ChipMultiSelect } from '@/src/components/ChipMultiSelect';
+import { InlineMessage } from '@/src/components/InlineMessage';
+import { Typography } from '@/src/components/Typography';
+import { WellbeingScale } from '@/src/components/WellbeingScale';
 import {
   ACTIVITY_OPTIONS,
   LIFESTYLE_OPTIONS,

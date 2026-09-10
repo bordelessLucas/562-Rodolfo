@@ -462,7 +462,58 @@ function isAdminUser() {
 
       function isCommunityMember() {
         return isSignedIn()
-          && exists(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid));
+          && exists(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid))
+          && (
+            !get(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid)).data.keys().hasAny(['status'])
+            || get(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid)).data.status == 'active'
+          );
+      }
+
+      function communityJoinPolicy() {
+        return communityData().keys().hasAny(['joinPolicy'])
+          ? communityData().joinPolicy
+          : 'open';
+      }
+
+      function communityPostPolicy() {
+        return communityData().keys().hasAny(['postPolicy'])
+          ? communityData().postPolicy
+          : 'members';
+      }
+
+      function communityCommentPolicy() {
+        return communityData().keys().hasAny(['commentPolicy'])
+          ? communityData().commentPolicy
+          : 'members';
+      }
+
+      function viewerRole() {
+        return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+          : '';
+      }
+
+      function isCommunityOwner() {
+        return isSignedIn() && communityData().createdBy == request.auth.uid;
+      }
+
+      function canEngageInCommunity() {
+        return isCommunityMember() || isAdminUser() || isCommunityOwner();
+      }
+
+      function canPublishByPolicy(policy) {
+        return isSignedIn()
+          && communityData().status == 'published'
+          && (
+            isAdminUser()
+            || isCommunityOwner()
+            || (isCommunityMember() && policy == 'members')
+            || (
+              isCommunityMember()
+              && policy == 'professionals'
+              && viewerRole() == 'profissional'
+            )
+          );
       }
 
       allow read: if isSignedIn() && (
@@ -477,6 +528,14 @@ function isAdminUser() {
         && request.resource.data.title.size() > 0
         && request.resource.data.description is string
         && request.resource.data.memberCount == 0
+        && request.resource.data.postPolicy in [
+          'members', 'owner', 'professionals'
+        ]
+        && request.resource.data.commentPolicy in [
+          'members', 'owner', 'professionals'
+        ]
+        && request.resource.data.joinPolicy in ['open', 'approval']
+        && request.resource.data.tags is list
         && (
           (isAdminUser()
             && request.resource.data.createdByRole in ['admin', 'profissional']
@@ -510,49 +569,115 @@ function isAdminUser() {
             && (
               resource.data.userId == request.auth.uid
               || isAdminUser()
+              || isCommunityOwner()
+              || (
+                isCommunityMember()
+                && resource.data.status == 'active'
+              )
             )
           )
           || (resource == null && memberId == request.auth.uid)
         );
 
-        allow list: if isSignedIn() && (isAdminUser() || isCommunityMember());
+        allow list: if isSignedIn() && (
+          resource.data.userId == request.auth.uid
+          || isAdminUser()
+          || isCommunityOwner()
+        );
 
         allow create: if isSignedIn()
           && memberId == request.auth.uid
           && request.resource.data.userId == request.auth.uid
           && request.resource.data.communityId == communityId
           && request.resource.data.userName is string
-          && communityData().status == 'published';
+          && communityData().status == 'published'
+          && request.resource.data.status in ['pending', 'active']
+          && (
+            (isAdminUser() || isCommunityOwner())
+              && request.resource.data.status == 'active'
+            || (communityJoinPolicy() == 'open'
+              && request.resource.data.status == 'active')
+            || (communityJoinPolicy() == 'approval'
+              && request.resource.data.status == 'pending')
+          );
+
+        allow update: if isSignedIn()
+          && (isAdminUser() || isCommunityOwner())
+          && resource.data.status == 'pending'
+          && request.resource.data.status in ['active', 'rejected']
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.communityId == resource.data.communityId;
 
         allow delete: if isSignedIn()
-          && resource.data.userId == request.auth.uid;
-
-        allow update: if false;
+          && (
+            resource.data.userId == request.auth.uid
+            || isAdminUser()
+            || isCommunityOwner()
+          );
       }
 
       match /posts/{postId} {
         allow read: if isSignedIn()
           && communityData().status == 'published'
-          && (isCommunityMember() || isAdminUser());
+          && canEngageInCommunity();
 
         allow create: if isSignedIn()
-          && isCommunityMember()
+          && canPublishByPolicy(communityPostPolicy())
           && request.resource.data.authorId == request.auth.uid
           && request.resource.data.communityId == communityId
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.summary is string
+          && request.resource.data.summary.size() > 0
           && request.resource.data.body is string
           && request.resource.data.body.size() > 0
-          && request.resource.data.authorName is string;
+          && request.resource.data.authorName is string
+          && request.resource.data.likeCount is number
+          && request.resource.data.commentCount is number;
 
-        allow update, delete: if isSignedIn()
-          && resource.data.authorId == request.auth.uid;
+        allow update: if isSignedIn() && (
+          isAdminUser()
+          || resource.data.authorId == request.auth.uid
+          || (
+            canEngageInCommunity()
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['likeCount', 'commentCount', 'updatedAt'])
+          )
+        );
+
+        allow delete: if isSignedIn()
+          && (isAdminUser() || resource.data.authorId == request.auth.uid);
+
+        match /likes/{likeUserId} {
+          allow get: if isSignedIn()
+            && communityData().status == 'published'
+            && (
+              canEngageInCommunity()
+              || (resource == null && likeUserId == request.auth.uid)
+            );
+
+          allow list: if isSignedIn()
+            && communityData().status == 'published'
+            && canEngageInCommunity();
+
+          allow create: if isSignedIn()
+            && canEngageInCommunity()
+            && likeUserId == request.auth.uid
+            && request.resource.data.userId == request.auth.uid;
+
+          allow delete: if isSignedIn()
+            && resource.data.userId == request.auth.uid;
+
+          allow update: if false;
+        }
 
         match /comments/{commentId} {
           allow read: if isSignedIn()
             && communityData().status == 'published'
-            && (isCommunityMember() || isAdminUser());
+            && canEngageInCommunity();
 
           allow create: if isSignedIn()
-            && isCommunityMember()
+            && canPublishByPolicy(communityCommentPolicy())
             && request.resource.data.authorId == request.auth.uid
             && request.resource.data.communityId == communityId
             && request.resource.data.postId == postId
@@ -561,7 +686,7 @@ function isAdminUser() {
             && request.resource.data.authorName is string;
 
           allow update, delete: if isSignedIn()
-            && resource.data.authorId == request.auth.uid;
+            && (isAdminUser() || resource.data.authorId == request.auth.uid);
         }
       }
     }

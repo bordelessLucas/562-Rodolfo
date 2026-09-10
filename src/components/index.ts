@@ -33,3 +33,9 @@ export type { ChipMultiSelectProps } from './ChipMultiSelect';
 
 export { ScreenHeader } from './ScreenHeader';
 export type { ScreenHeaderProps } from './ScreenHeader';
+
+export { CommunityCard } from './CommunityCard';
+export { PostCard } from './PostCard';
+export { SocialFeedPost } from './SocialFeedPost';
+export { CommentThread } from './CommentThread';
+export { CheckinFormModal } from './CheckinFormModal';

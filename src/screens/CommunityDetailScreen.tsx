@@ -1,14 +1,22 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Button,
-  Container,
+  CommunityOptionsSheet,
   InlineMessage,
-  ScreenHeader,
   SocialFeedPost,
   Typography,
 } from '@/src/components';
@@ -18,6 +26,7 @@ import {
   communityTagLabel,
 } from '@/src/domain/community';
 import { useCommunityDetail } from '@/src/hooks/useCommunityDetail';
+import { useCommunityMute } from '@/src/hooks/useCommunityMute';
 import { colors, radius, space } from '@/src/theme';
 import { goBackOrReplace } from '@/src/utils/navigationBack';
 import { firstParam } from '@/src/utils/routeParams';
@@ -26,6 +35,8 @@ export function CommunityDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ communityId?: string | string[] }>();
   const communityId = firstParam(params.communityId);
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const {
     community,
     isMember,
@@ -47,41 +58,121 @@ export function CommunityDetailScreen() {
     toggleLike,
   } = useCommunityDetail(communityId);
 
+  const { muted, toggleMute } = useCommunityMute(communityId);
+
+  const showOptions = Boolean(isMember || isPendingJoin);
+  const leaveLabel = isPendingJoin
+    ? 'Cancelar solicitação'
+    : 'Sair do grupo';
+
+  const confirmLeave = () => {
+    setMenuOpen(false);
+    Alert.alert(
+      isPendingJoin ? 'Cancelar solicitação?' : 'Sair do grupo?',
+      isPendingJoin
+        ? 'Seu pedido de entrada será cancelado.'
+        : 'Você deixará de participar das conversas deste grupo.',
+      [
+        { text: 'Voltar', style: 'cancel' },
+        {
+          text: isPendingJoin ? 'Cancelar pedido' : 'Sair',
+          style: 'destructive',
+          onPress: () => {
+            void leave();
+          },
+        },
+      ],
+    );
+  };
+
+  const handleToggleMute = () => {
+    void toggleMute();
+  };
+
   if (!communityId) {
     return (
-      <Container contentStyle={styles.content}>
-        <InlineMessage message="Comunidade inválida." variant="error" />
-        <Button
-          label="Voltar"
-          onPress={() => goBackOrReplace('/(paciente)/comunidade' as Href)}
-        />
-      </Container>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
+        <View style={styles.padded}>
+          <InlineMessage message="Comunidade inválida." variant="error" />
+          <Button
+            label="Voltar"
+            onPress={() => goBackOrReplace('/(paciente)/comunidade' as Href)}
+          />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <Container
-      scroll
-      edges={['top', 'left', 'right']}
-      contentStyle={styles.content}
-    >
-      <ScreenHeader
-        title="Grupo"
-        compact
-        onBack={() => goBackOrReplace('/(paciente)/comunidade' as Href)}
-        backLabel="Comunidades"
-      />
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
+      <View style={styles.topBar}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para comunidades"
+          hitSlop={8}
+          onPress={() => goBackOrReplace('/(paciente)/comunidade' as Href)}
+          style={({ pressed }) => [
+            styles.topButton,
+            pressed ? styles.pressed : null,
+          ]}
+        >
+          <Ionicons name="chevron-back" size={22} color={colors.primary} />
+        </Pressable>
 
-      {error ? <InlineMessage message={error} variant="error" /> : null}
-      {message ? <InlineMessage message={message} variant="success" /> : null}
+        <View style={styles.topTitle}>
+          <Typography variant="label" numberOfLines={1}>
+            {community?.title ?? 'Grupo'}
+          </Typography>
+          {muted ? (
+            <Typography variant="caption" color={colors.textMuted}>
+              Silenciado
+            </Typography>
+          ) : null}
+        </View>
 
-      {loading && !community ? (
-        <ActivityIndicator color={colors.primary} />
-      ) : null}
+        {showOptions ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Opções do grupo"
+            hitSlop={8}
+            onPress={() => setMenuOpen(true)}
+            style={({ pressed }) => [
+              styles.topButton,
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <Ionicons
+              name="ellipsis-horizontal"
+              size={22}
+              color={colors.text}
+            />
+          </Pressable>
+        ) : (
+          <View style={styles.topButtonSpacer} />
+        )}
+      </View>
 
-      {community ? (
-        <>
-          <View style={styles.groupBlock}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {error ? (
+          <View style={styles.padded}>
+            <InlineMessage message={error} variant="error" />
+          </View>
+        ) : null}
+        {message ? (
+          <View style={styles.padded}>
+            <InlineMessage message={message} variant="success" />
+          </View>
+        ) : null}
+
+        {loading && !community ? (
+          <ActivityIndicator color={colors.primary} style={styles.loader} />
+        ) : null}
+
+        {community ? (
+          <>
             <View style={styles.coverWrap}>
               {community.coverUrl ? (
                 <Image
@@ -99,7 +190,7 @@ export function CommunityDetailScreen() {
                 />
               )}
               <LinearGradient
-                colors={['transparent', 'rgba(26, 43, 38, 0.72)']}
+                colors={['transparent', 'rgba(26, 43, 38, 0.78)']}
                 style={styles.coverFade}
               >
                 <Typography variant="h2" color={colors.textOnPrimary}>
@@ -151,155 +242,188 @@ export function CommunityDetailScreen() {
                 Comentar: {communityPolicyLabel(community.commentPolicy)}
               </Typography>
 
-              <View style={styles.groupActions}>
-                {isMember ? (
-                  <Button
-                    label="Sair do grupo"
-                    variant="outline"
-                    loading={joining}
-                    onPress={leave}
-                  />
-                ) : isPendingJoin ? (
-                  <>
-                    <InlineMessage
-                      message="Sua solicitação está aguardando o dono do grupo."
-                      variant="info"
-                    />
-                    <Button
-                      label="Cancelar solicitação"
-                      variant="outline"
-                      loading={joining}
-                      onPress={leave}
-                    />
-                  </>
-                ) : (
-                  <Button
-                    label={
-                      community.joinPolicy === 'approval'
-                        ? 'Solicitar entrada'
-                        : 'Entrar no grupo'
-                    }
-                    loading={joining}
-                    onPress={join}
-                  />
-                )}
+              {!isMember && !isPendingJoin ? (
+                <Button
+                  label={
+                    community.joinPolicy === 'approval'
+                      ? 'Solicitar entrada'
+                      : 'Entrar no grupo'
+                  }
+                  loading={joining}
+                  onPress={join}
+                />
+              ) : null}
 
-                {canPost ? (
-                  <Button
-                    label="Nova publicação"
-                    onPress={() =>
-                      router.push(
-                        `/(paciente)/comunidade/${communityId}/nova-publicacao` as Href,
-                      )
-                    }
-                  />
-                ) : null}
-              </View>
+              {isPendingJoin ? (
+                <InlineMessage
+                  message="Sua solicitação está aguardando o dono do grupo."
+                  variant="info"
+                />
+              ) : null}
+
+              {canPost ? (
+                <Button
+                  label="Nova publicação"
+                  onPress={() =>
+                    router.push(
+                      `/(paciente)/comunidade/${communityId}/nova-publicacao` as Href,
+                    )
+                  }
+                />
+              ) : null}
             </View>
-          </View>
 
-          {isOwner && pendingMembers.length > 0 ? (
-            <View style={styles.moderation}>
-              <Typography variant="h3">Pedidos de entrada</Typography>
-              <Typography variant="caption" color={colors.textMuted}>
-                Aprove ou recuse quem pediu para participar.
-              </Typography>
-              {pendingMembers.map((item) => (
-                <View key={item.id} style={styles.pendingCard}>
-                  <View style={styles.pendingText}>
-                    <Typography variant="bodyStrong">{item.userName}</Typography>
-                    <Typography variant="caption" color={colors.textMuted}>
-                      Solicitou em{' '}
-                      {(item.requestedAt ?? item.joinedAt).toLocaleDateString(
-                        'pt-BR',
-                      )}
+            {isOwner && pendingMembers.length > 0 ? (
+              <View style={[styles.padded, styles.moderation]}>
+                <Typography variant="h3">Pedidos de entrada</Typography>
+                <Typography variant="caption" color={colors.textMuted}>
+                  Aprove ou recuse quem pediu para participar.
+                </Typography>
+                {pendingMembers.map((item) => (
+                  <View key={item.id} style={styles.pendingCard}>
+                    <View style={styles.pendingText}>
+                      <Typography variant="bodyStrong">
+                        {item.userName}
+                      </Typography>
+                      <Typography variant="caption" color={colors.textMuted}>
+                        Solicitou em{' '}
+                        {(
+                          item.requestedAt ?? item.joinedAt
+                        ).toLocaleDateString('pt-BR')}
+                      </Typography>
+                    </View>
+                    <View style={styles.pendingActions}>
+                      <Button
+                        label="Aprovar"
+                        loading={moderatingId === item.userId}
+                        onPress={() => void approve(item.userId)}
+                      />
+                      <Button
+                        label="Recusar"
+                        variant="outline"
+                        loading={moderatingId === item.userId}
+                        onPress={() => void reject(item.userId)}
+                      />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            {isMember || isOwner || feed.length > 0 ? (
+              <View style={styles.feed}>
+                <View style={styles.feedHeader}>
+                  <Typography variant="h3">No grupo</Typography>
+                  <Typography variant="caption" color={colors.textMuted}>
+                    {feed.length} publicação(ões)
+                  </Typography>
+                </View>
+                {feed.length === 0 ? (
+                  <View style={styles.emptyFeed}>
+                    <Typography variant="bodyStrong">
+                      Ainda sem publicações
+                    </Typography>
+                    <Typography variant="body" color={colors.textMuted}>
+                      Esta é a casa do grupo. Quando alguém postar, a conversa
+                      aparece aqui.
                     </Typography>
                   </View>
-                  <View style={styles.pendingActions}>
-                    <Button
-                      label="Aprovar"
-                      loading={moderatingId === item.userId}
-                      onPress={() => void approve(item.userId)}
+                ) : (
+                  feed.map((item) => (
+                    <SocialFeedPost
+                      key={item.post.id}
+                      item={item}
+                      communityId={communityId}
+                      likeBusy={likeBusyId === item.post.id}
+                      onToggleLike={() => void toggleLike(item.post.id)}
+                      onOpen={() =>
+                        router.push(
+                          `/(paciente)/comunidade/${communityId}/posts/${item.post.id}` as Href,
+                        )
+                      }
                     />
-                    <Button
-                      label="Recusar"
-                      variant="outline"
-                      loading={moderatingId === item.userId}
-                      onPress={() => void reject(item.userId)}
-                    />
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : null}
-
-          {isMember || isOwner || feed.length > 0 ? (
-            <View style={styles.feed}>
-              <View style={styles.feedHeader}>
-                <Typography variant="h3">Conversas do grupo</Typography>
-                <Typography variant="caption" color={colors.textMuted}>
-                  {feed.length} publicação(ões)
-                </Typography>
+                  ))
+                )}
               </View>
-              {feed.length === 0 ? (
-                <View style={styles.emptyFeed}>
-                  <Typography variant="bodyStrong">
-                    Ainda sem publicações
-                  </Typography>
-                  <Typography variant="body" color={colors.textMuted}>
-                    Quando alguém postar, curtidas e comentários aparecem aqui.
-                  </Typography>
-                </View>
-              ) : (
-                feed.map((item) => (
-                  <SocialFeedPost
-                    key={item.post.id}
-                    item={item}
-                    likeBusy={likeBusyId === item.post.id}
-                    onToggleLike={() => void toggleLike(item.post.id)}
-                    onOpen={() =>
-                      router.push(
-                        `/(paciente)/comunidade/${communityId}/posts/${item.post.id}` as Href,
-                      )
-                    }
-                  />
-                ))
-              )}
-            </View>
-          ) : !isPendingJoin ? (
-            <InlineMessage
-              message={
-                community.joinPolicy === 'approval'
-                  ? 'Este grupo exige aprovação. Solicite entrada para ver o feed.'
-                  : 'Entre no grupo para ver publicações e interagir.'
-              }
-              variant="info"
-            />
-          ) : null}
-        </>
-      ) : null}
-    </Container>
+            ) : !isPendingJoin ? (
+              <View style={styles.padded}>
+                <InlineMessage
+                  message={
+                    community.joinPolicy === 'approval'
+                      ? 'Este grupo exige aprovação. Solicite entrada para ver o feed.'
+                      : 'Entre no grupo para ver publicações e interagir.'
+                  }
+                  variant="info"
+                />
+              </View>
+            ) : null}
+          </>
+        ) : null}
+      </ScrollView>
+
+      <CommunityOptionsSheet
+        visible={menuOpen}
+        muted={muted}
+        leaving={joining}
+        leaveLabel={leaveLabel}
+        onClose={() => setMenuOpen(false)}
+        onToggleMute={handleToggleMute}
+        onLeave={confirmLeave}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    gap: space[5],
-    paddingBottom: space[8],
+  safe: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-  groupBlock: {
-    borderRadius: radius.lg,
-    overflow: 'hidden',
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[2],
+    paddingHorizontal: space[4],
+    paddingVertical: space[2],
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+  },
+  topButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topButtonSpacer: {
+    width: 40,
+    height: 40,
+  },
+  topTitle: {
+    flex: 1,
+    gap: 1,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+  scrollContent: {
+    paddingBottom: space[8],
+    gap: space[5],
+  },
+  padded: {
+    paddingHorizontal: space[5],
+    gap: space[3],
+  },
+  loader: {
+    marginTop: space[8],
   },
   coverWrap: {
     position: 'relative',
   },
   cover: {
     width: '100%',
-    height: 200,
+    height: 220,
     backgroundColor: colors.backgroundAccent,
   },
   coverFade: {
@@ -307,13 +431,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: space[4],
+    paddingHorizontal: space[5],
     paddingVertical: space[4],
     gap: space[1],
   },
   groupBody: {
     gap: space[3],
-    padding: space[4],
+    paddingHorizontal: space[5],
   },
   creatorRow: {
     flexDirection: 'row',
@@ -343,10 +467,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     backgroundColor: colors.backgroundAccent,
   },
-  groupActions: {
-    gap: space[2],
-    marginTop: space[1],
-  },
   moderation: {
     gap: space[3],
   },
@@ -364,12 +484,17 @@ const styles = StyleSheet.create({
   },
   feed: {
     gap: space[3],
+    paddingHorizontal: space[5],
+    paddingTop: space[2],
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   feedHeader: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
     gap: space[3],
+    paddingTop: space[2],
   },
   emptyFeed: {
     gap: space[2],

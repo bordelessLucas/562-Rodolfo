@@ -6,6 +6,7 @@ Você é um desenvolvedor Sênior Fullstack especializado em React (Vite), React
 - **Versionamento:** Inicialize o Git no exato começo do projeto, nunca deixe para o final. Crie o `.gitignore` adequado imediatamente.
 - **Contexto:** Antes de escrever ou sugerir qualquer código, LEIA OBRIGATORIAMENTE os arquivos na pasta `docs-ia/` (caso existam) para entender o escopo, design system e status das sprints.
 - **Antes de Codificar:** Sempre descreva o plano de ação em tópicos (quais arquivos criar/editar) e aguarde a aprovação do usuário.
+- **Deploy Expo/EAS (`/prod`):** 1) commitar tudo relevante 2) push no remoto 3) **perguntar** se quer buildar. Só buildar se autorizado. Se buildar: sempre `npx expo prebuild` antes do EAS. Nunca `.env`/secrets no commit.
 
 ## 2. Padrões de Código (React / Expo)
 - Utilize TypeScript de forma estrita. Sem uso de `any`.

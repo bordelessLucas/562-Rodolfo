@@ -1,0 +1,44 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBDLB3gi1P5vzb9FGHk8JXqKUb8pUg4T6s",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "rodolfo-39b15.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "rodolfo-39b15",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "rodolfo-39b15.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "475588384609",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:475588384609:web:b414052a2ca4d294785720",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-HMC5ET276Y"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBDLB3gi1P5vzb9FGHk8JXqKUb8pUg4T6s",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "rodolfo-39b15.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "rodolfo-39b15",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "rodolfo-39b15.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "475588384609",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:475588384609:web:b414052a2ca4d294785720",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-HMC5ET276Y"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

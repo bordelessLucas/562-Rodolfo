@@ -1,8 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import {
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   StyleSheet,
   View,
@@ -75,9 +80,33 @@ function painLabel(pain: PainFilter): string {
   return PAIN_OPTIONS.find((item) => item.id === pain)?.label ?? 'Qualquer dor';
 }
 
+function readParam(
+  value: string | string[] | undefined,
+): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
+
+function confirmEnterEditMode(onConfirm: () => void): void {
+  Alert.alert(
+    'Modo de edição',
+    'Você deseja entrar no modo de edição?',
+    [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Confirmar', onPress: onConfirm },
+    ],
+  );
+}
+
 export function CheckinScreen() {
   const { user } = useAuth();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ open?: string | string[] }>();
+  const openParam = readParam(params.open);
   const todayKey = toDateKey(new Date());
+  const autoOpenHandledRef = useRef(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [formMode, setFormMode] = useState<FormMode>('create');
@@ -144,6 +173,9 @@ export function CheckinScreen() {
   useFocusEffect(
     useCallback(() => {
       void loadHistory();
+      return () => {
+        autoOpenHandledRef.current = false;
+      };
     }, [loadHistory]),
   );
 
@@ -175,7 +207,7 @@ export function CheckinScreen() {
     });
   }, [history, periodFilter, painFilter, todayKey]);
 
-  const openCreateToday = () => {
+  const openCreateToday = useCallback(() => {
     if (todayCheckin) {
       return;
     }
@@ -185,39 +217,77 @@ export function CheckinScreen() {
     setFormError('');
     setMessage('');
     setModalOpen(true);
-  };
+  }, [applyCheckinToForm, todayCheckin, todayKey]);
 
-  const openExisting = async (
-    item: DailyCheckin,
-    mode: 'view' | 'edit',
-  ) => {
-    setFormMode(mode);
-    setDateKey(item.date);
-    setFormError('');
-    setMessage('');
-    applyCheckinToForm(item);
-    setModalOpen(true);
+  const openExisting = useCallback(
+    async (item: DailyCheckin, mode: 'view' | 'edit') => {
+      setFormMode(mode);
+      setDateKey(item.date);
+      setFormError('');
+      setMessage('');
+      applyCheckinToForm(item);
+      setModalOpen(true);
 
-    if (!user) {
-      return;
-    }
-    try {
-      const fresh = await getCheckinByDate(user.uid, item.date);
-      if (fresh) {
-        applyCheckinToForm(fresh);
+      if (!user) {
+        return;
       }
-    } catch {
-      // mantém dados da lista
-    }
-  };
+      try {
+        const fresh = await getCheckinByDate(user.uid, item.date);
+        if (fresh) {
+          applyCheckinToForm(fresh);
+        }
+      } catch {
+        // mantém dados da lista
+      }
+    },
+    [applyCheckinToForm, user],
+  );
 
   const openViewExisting = (item: DailyCheckin) => {
     void openExisting(item, 'view');
   };
 
   const openEditExisting = (item: DailyCheckin) => {
-    void openExisting(item, 'edit');
+    confirmEnterEditMode(() => {
+      void openExisting(item, 'edit');
+    });
   };
+
+  const startEditFromView = () => {
+    confirmEnterEditMode(() => {
+      setFormMode('edit');
+    });
+  };
+
+  useEffect(() => {
+    if (
+      openParam !== 'today' ||
+      historyLoading ||
+      modalOpen ||
+      autoOpenHandledRef.current
+    ) {
+      return;
+    }
+
+    autoOpenHandledRef.current = true;
+    router.setParams({ open: undefined });
+
+    if (todayCheckin) {
+      // Já feito: abre em visualização; edição exige confirmação.
+      void openExisting(todayCheckin, 'view');
+      return;
+    }
+
+    openCreateToday();
+  }, [
+    historyLoading,
+    modalOpen,
+    openCreateToday,
+    openExisting,
+    openParam,
+    router,
+    todayCheckin,
+  ]);
 
   const handleSave = async () => {
     if (!user) {
@@ -557,7 +627,7 @@ export function CheckinScreen() {
         error={formError}
         onSave={handleSave}
         onClose={() => setModalOpen(false)}
-        onStartEdit={() => setFormMode('edit')}
+        onStartEdit={startEditFromView}
       />
     </Container>
   );

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Typography } from '@/src/components/Typography';
 import type { CommunityComment } from '@/src/domain/community';
-import { colors, radius, space } from '@/src/theme';
+import { colors, space } from '@/src/theme';
 
 type CommentThreadProps = {
   comments: CommunityComment[];
@@ -32,6 +32,60 @@ function formatTime(date: Date): string {
   });
 }
 
+type CommentRowProps = {
+  comment: CommunityComment;
+  canReply: boolean;
+  isActive: boolean;
+  compact?: boolean;
+  onReply?: (parentId: string) => void;
+};
+
+function CommentRow({
+  comment,
+  canReply,
+  isActive,
+  compact = false,
+  onReply,
+}: CommentRowProps) {
+  return (
+    <View style={styles.row}>
+      <View style={[styles.avatar, compact ? styles.avatarReply : null]}>
+        <Typography variant="caption" color={colors.primary}>
+          {initials(comment.authorName)}
+        </Typography>
+      </View>
+
+      <View style={styles.content}>
+        <View style={styles.nameRow}>
+          <Typography variant="bodyStrong" style={styles.name}>
+            {comment.authorName}
+          </Typography>
+          <Typography variant="caption" color={colors.textMuted}>
+            {formatTime(comment.createdAt)}
+          </Typography>
+        </View>
+
+        <Typography variant="body">{comment.body}</Typography>
+
+        {canReply && onReply ? (
+          <Pressable
+            hitSlop={8}
+            onPress={() => onReply(comment.id)}
+            style={styles.replyAction}
+          >
+            <Typography
+              variant="caption"
+              color={isActive ? colors.secondary : colors.primary}
+            >
+              {isActive ? 'Respondendo…' : 'Responder'}
+            </Typography>
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
 export function CommentThread({
   comments,
   canReply,
@@ -54,9 +108,13 @@ export function CommentThread({
 
   if (roots.length === 0) {
     return (
-      <Typography variant="body" color={colors.textMuted}>
-        Seja a primeira pessoa a comentar.
-      </Typography>
+      <View style={styles.empty}>
+        <Typography variant="bodyStrong">Ainda sem mensagens</Typography>
+        <Typography variant="body" color={colors.textMuted}>
+          A conversa desta publicação começa aqui. Seja a primeira pessoa a
+          escrever.
+        </Typography>
+      </View>
     );
   }
 
@@ -67,58 +125,23 @@ export function CommentThread({
         const isActive = activeReplyId === root.id;
         return (
           <View key={root.id} style={styles.thread}>
-            <View style={styles.row}>
-              <View style={styles.avatar}>
-                <Typography variant="caption" color={colors.primary}>
-                  {initials(root.authorName)}
-                </Typography>
-              </View>
-              <View style={styles.bubble}>
-                <View style={styles.meta}>
-                  <Typography variant="bodyStrong">{root.authorName}</Typography>
-                  <Typography variant="caption" color={colors.textMuted}>
-                    {formatTime(root.createdAt)}
-                  </Typography>
-                </View>
-                <Typography variant="body">{root.body}</Typography>
-                {canReply ? (
-                  <Pressable
-                    hitSlop={8}
-                    onPress={() => onReply(root.id)}
-                    style={styles.replyAction}
-                  >
-                    <Typography
-                      variant="caption"
-                      color={isActive ? colors.secondary : colors.primary}
-                    >
-                      {isActive ? 'Respondendo…' : 'Responder'}
-                    </Typography>
-                  </Pressable>
-                ) : null}
-              </View>
-            </View>
+            <CommentRow
+              comment={root}
+              canReply={canReply}
+              isActive={isActive}
+              onReply={onReply}
+            />
 
             {replies.length > 0 ? (
               <View style={styles.replies}>
                 {replies.map((reply) => (
-                  <View key={reply.id} style={styles.row}>
-                    <View style={[styles.avatar, styles.avatarReply]}>
-                      <Typography variant="caption" color={colors.primary}>
-                        {initials(reply.authorName)}
-                      </Typography>
-                    </View>
-                    <View style={[styles.bubble, styles.bubbleReply]}>
-                      <View style={styles.meta}>
-                        <Typography variant="bodyStrong">
-                          {reply.authorName}
-                        </Typography>
-                        <Typography variant="caption" color={colors.textMuted}>
-                          {formatTime(reply.createdAt)}
-                        </Typography>
-                      </View>
-                      <Typography variant="body">{reply.body}</Typography>
-                    </View>
-                  </View>
+                  <CommentRow
+                    key={reply.id}
+                    comment={reply}
+                    canReply={false}
+                    isActive={false}
+                    compact
+                  />
                 ))}
               </View>
             ) : null}
@@ -132,6 +155,10 @@ export function CommentThread({
 const styles = StyleSheet.create({
   list: {
     gap: space[4],
+  },
+  empty: {
+    gap: space[2],
+    paddingVertical: space[2],
   },
   thread: {
     gap: space[3],
@@ -147,41 +174,37 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.backgroundAccent,
+    backgroundColor: colors.surface,
   },
   avatarReply: {
     width: 28,
     height: 28,
     borderRadius: 14,
   },
-  bubble: {
+  content: {
     flex: 1,
-    gap: space[1],
-    padding: space[3],
-    borderRadius: radius.md,
-    backgroundColor: colors.backgroundAccent,
+    gap: 2,
+    paddingTop: 1,
   },
-  bubbleReply: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  meta: {
+  nameRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    alignItems: 'center',
+    alignItems: 'baseline',
     gap: space[2],
+  },
+  name: {
+    flexShrink: 1,
   },
   replyAction: {
     alignSelf: 'flex-start',
-    paddingTop: 2,
+    paddingTop: space[1],
     minHeight: 28,
     justifyContent: 'center',
   },
   replies: {
     marginLeft: space[8],
     gap: space[3],
-    paddingLeft: space[2],
+    paddingLeft: space[3],
     borderLeftWidth: 2,
     borderLeftColor: colors.border,
   },

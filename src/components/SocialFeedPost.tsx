@@ -1,10 +1,13 @@
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import * as Haptics from 'expo-haptics';
+import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { LikeActionButton } from '@/src/components/LikeActionButton';
 import { Typography } from '@/src/components/Typography';
 import type { CommunityComment, CommunityPost } from '@/src/domain/community';
+import { useDoubleTap } from '@/src/hooks/useDoubleTap';
 import { colors, radius, space } from '@/src/theme';
 
 export type FeedPostItem = {
@@ -15,6 +18,7 @@ export type FeedPostItem = {
 
 type SocialFeedPostProps = {
   item: FeedPostItem;
+  communityId: string;
   onOpen: () => void;
   onToggleLike: () => void;
   likeBusy?: boolean;
@@ -39,14 +43,21 @@ export function SocialFeedPost({
 }: SocialFeedPostProps) {
   const { post, liked, previewComments } = item;
   const roots = previewComments.filter((c) => !c.parentCommentId).slice(0, 2);
+  const [burstKey, setBurstKey] = useState(0);
+
+  const handleDoubleTapLike = useCallback(() => {
+    setBurstKey((current) => current + 1);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (!liked && !likeBusy) {
+      onToggleLike();
+    }
+  }, [likeBusy, liked, onToggleLike]);
+
+  const handleImagePress = useDoubleTap(handleDoubleTapLike, onOpen);
 
   return (
     <View style={styles.card}>
-      <Pressable
-        accessibilityRole="button"
-        onPress={onOpen}
-        style={({ pressed }) => (pressed ? styles.pressed : null)}
-      >
+      <Pressable accessibilityRole="button" onPress={onOpen}>
         <View style={styles.header}>
           <View style={styles.avatar}>
             <Typography variant="caption" color={colors.primary}>
@@ -70,40 +81,32 @@ export function SocialFeedPost({
         <Typography variant="body" color={colors.textMuted} numberOfLines={3}>
           {post.summary}
         </Typography>
+      </Pressable>
 
-        {post.imageUrl ? (
+      {post.imageUrl ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Toque duas vezes para curtir"
+          onPress={handleImagePress}
+          style={styles.imageStage}
+        >
           <Image
             source={{ uri: post.imageUrl }}
             style={styles.image}
             contentFit="cover"
             transition={220}
           />
-        ) : null}
-      </Pressable>
+        </Pressable>
+      ) : null}
 
       <View style={styles.actions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={liked ? 'Remover curtida' : 'Curtir'}
-          disabled={likeBusy}
+        <LikeActionButton
+          liked={liked}
+          count={post.likeCount}
+          busy={likeBusy}
+          burstKey={burstKey}
           onPress={onToggleLike}
-          style={({ pressed }) => [
-            styles.actionBtn,
-            pressed ? styles.pressed : null,
-          ]}
-        >
-          <Ionicons
-            name={liked ? 'heart' : 'heart-outline'}
-            size={20}
-            color={liked ? colors.error : colors.textMuted}
-          />
-          <Typography
-            variant="caption"
-            color={liked ? colors.error : colors.textMuted}
-          >
-            {post.likeCount}
-          </Typography>
-        </Pressable>
+        />
 
         <Pressable
           accessibilityRole="button"
@@ -133,7 +136,7 @@ export function SocialFeedPost({
           ]}
         >
           <Typography variant="caption" color={colors.primary}>
-            Ver thread
+            Ver post
           </Typography>
         </Pressable>
       </View>
@@ -142,14 +145,13 @@ export function SocialFeedPost({
         <View style={styles.preview}>
           {roots.map((comment) => (
             <Pressable key={comment.id} onPress={onOpen} style={styles.previewRow}>
-              <Typography variant="caption" color={colors.primary}>
+              <Typography variant="bodyStrong" color={colors.text}>
                 {comment.authorName}
               </Typography>
               <Typography
                 variant="caption"
                 color={colors.textMuted}
                 numberOfLines={2}
-                style={styles.previewBody}
               >
                 {comment.body}
               </Typography>
@@ -198,11 +200,13 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  imageStage: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
   image: {
-    marginTop: space[1],
     width: '100%',
     height: 180,
-    borderRadius: radius.md,
     backgroundColor: colors.backgroundAccent,
   },
   actions: {
@@ -226,8 +230,5 @@ const styles = StyleSheet.create({
   },
   previewRow: {
     gap: 2,
-  },
-  previewBody: {
-    flexShrink: 1,
   },
 });

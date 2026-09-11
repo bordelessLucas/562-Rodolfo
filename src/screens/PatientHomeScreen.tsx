@@ -184,7 +184,9 @@ export function PatientHomeScreen() {
             label={
               todayDone ? 'Abrir check-in de hoje' : 'Fazer check-in diário'
             }
-            onPress={() => router.push('/(paciente)/checkin' as Href)}
+            onPress={() =>
+              router.push('/(paciente)/checkin?open=today' as Href)
+            }
           />
         </View>
       </SectionCard>
@@ -255,7 +257,9 @@ export function PatientHomeScreen() {
               <Button
                 label="Fazer check-in para analisar"
                 variant="outline"
-                onPress={() => router.push('/(paciente)/checkin' as Href)}
+                onPress={() =>
+                  router.push('/(paciente)/checkin?open=today' as Href)
+                }
               />
             ) : null}
           </View>

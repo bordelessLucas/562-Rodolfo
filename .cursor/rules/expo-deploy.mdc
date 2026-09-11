@@ -1,0 +1,24 @@
+---
+description: Fluxo /prod Expo — commit, push, perguntar build; prebuild se autorizado
+alwaysApply: true
+---
+
+# Deploy Expo / EAS — comando `/prod`
+
+Quando o usuário digitar **`/prod`** (ou equivalente claro):
+
+1. **Commitar tudo** relevante (nunca `.env` / secrets).
+2. **Push** da branch atual para o remoto (`git push -u` se necessário).
+3. **PARAR e PERGUNTAR** se o usuário quer buildar no Expo/EAS (plataforma, profile).
+4. **Só buildar** se o usuário autorizar explicitamente nessa pergunta (ou na mesma mensagem, como "e sobe a build").
+
+## Se o build for autorizado
+
+- Rodar **sempre** `npx expo prebuild --platform <plataforma>` **antes** de `eas build`.
+- Preferir profile `production` quando o usuário disser prod/produção.
+- Não assumir iOS: confirmar se não estiver explícito.
+
+## Proibições
+
+- NUNCA iniciar `eas build` / submit / update só por `/prod` sem o passo 3 (exceto se a mesma mensagem já autorizar o build).
+- NUNCA pular prebuild quando for buildar.

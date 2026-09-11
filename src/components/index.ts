@@ -35,6 +35,12 @@ export { ScreenHeader } from './ScreenHeader';
 export type { ScreenHeaderProps } from './ScreenHeader';
 
 export { CommunityCard } from './CommunityCard';
+export { CommunityOptionsSheet } from './CommunityOptionsSheet';
+export type { CommunityOptionsSheetProps } from './CommunityOptionsSheet';
+export { OptionsPopup } from './OptionsPopup';
+export type { OptionsPopupItem, OptionsPopupProps } from './OptionsPopup';
+export { LikeActionButton } from './LikeActionButton';
+export { LikeHeartBurst } from './LikeHeartBurst';
 export { PostCard } from './PostCard';
 export { SocialFeedPost } from './SocialFeedPost';
 export { CommentThread } from './CommentThread';

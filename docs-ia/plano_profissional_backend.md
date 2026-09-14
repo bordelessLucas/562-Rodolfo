@@ -239,10 +239,12 @@ Deploy: `firestore.rules` + `firestore.indexes.json` no projeto `rodolfo-39b15`.
 
 ---
 
-## 10. Critérios de aceite
+> Critérios de aceite: backend + UI mínima (P0–P5) + UI pass 14/09/2026.
+> Validação end-to-end no dispositivo: ver `auditoria_profissional_e2e.md`.
 
 - [x] Domain + services de vínculo e leitura de pacientes  
 - [x] Rules + indexes deployados em `rodolfo-39b15`  
 - [x] Docs-ia atualizados  
 - [x] UI profissional/paciente (Sprint Continuity 08/09/2026)  
-- [ ] Validação end-to-end no Expo Go
+- [x] UI pass home/resumo + empty states + confirmação encerrar vínculo (14/09/2026)  
+- [ ] Validação end-to-end no Expo Go / build

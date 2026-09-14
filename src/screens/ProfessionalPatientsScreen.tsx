@@ -1,5 +1,5 @@
-import { useRouter, type Href } from 'expo-router';
-import React, { useState } from 'react';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -20,10 +20,15 @@ import { useAuth } from '@/src/hooks/useAuth';
 import { useProfessionalPatients } from '@/src/hooks/useProfessionalPatients';
 import { colors, radius, space } from '@/src/theme';
 
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export function ProfessionalPatientsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const [inviteEmail, setInviteEmail] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
   const {
     patients,
     pendingInvites,
@@ -36,10 +41,28 @@ export function ProfessionalPatientsScreen() {
     cancelInvite,
   } = useProfessionalPatients(user?.uid);
 
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
+
   const handleInvite = async () => {
-    await invite(inviteEmail);
+    setLocalError(null);
+    const email = inviteEmail.trim();
+    if (!email) {
+      setLocalError('Informe o e-mail do paciente.');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setLocalError('E-mail inválido. Use o mesmo e-mail da conta do paciente.');
+      return;
+    }
+    await invite(email);
     setInviteEmail('');
   };
+
+  const feedbackError = localError ?? error;
 
   return (
     <Container
@@ -51,22 +74,29 @@ export function ProfessionalPatientsScreen() {
       <ScreenHeader
         eyebrow="Acompanhamento"
         title="Meus pacientes"
-        subtitle="Convide pelo e-mail cadastrado. Só há leitura de check-ins após o aceite."
-        onBack={() => router.back()}
+        subtitle="Convite por e-mail. Check-ins só em leitura após o aceite."
+        onBack={() => router.replace('/(profissional)' as Href)}
         backLabel="Início"
       />
 
-      {error ? <InlineMessage message={error} variant="error" /> : null}
+      {feedbackError ? (
+        <InlineMessage message={feedbackError} variant="error" />
+      ) : null}
       {message ? <InlineMessage message={message} variant="success" /> : null}
 
       <SectionCard
         title="Convidar paciente"
-        description="O paciente precisa ter conta com o mesmo e-mail para aceitar o convite."
+        description="O paciente precisa ter conta com o mesmo e-mail para aceitar."
       >
         <Input
           label="E-mail do paciente"
           value={inviteEmail}
-          onChangeText={setInviteEmail}
+          onChangeText={(text) => {
+            setInviteEmail(text);
+            if (localError) {
+              setLocalError(null);
+            }
+          }}
           autoCapitalize="none"
           keyboardType="email-address"
           leftIcon="mail-outline"
@@ -93,16 +123,20 @@ export function ProfessionalPatientsScreen() {
         description="Aguardando o paciente aceitar no aplicativo."
       >
         {pendingInvites.length === 0 ? (
-          <Typography variant="body" color={colors.textMuted}>
-            Nenhum convite pendente.
-          </Typography>
+          <View style={styles.empty}>
+            <Typography variant="body" color={colors.textMuted}>
+              Nenhum convite pendente no momento.
+            </Typography>
+          </View>
         ) : (
           pendingInvites.map((link) => (
             <View key={link.id} style={styles.rowCard}>
+              <View style={styles.badge}>
+                <Typography variant="caption" color={colors.warning}>
+                  Pendente
+                </Typography>
+              </View>
               <Typography variant="h3">{link.patientEmail}</Typography>
-              <Typography variant="caption" color={colors.textMuted}>
-                Status: pendente
-              </Typography>
               <Button
                 label="Cancelar convite"
                 variant="outline"
@@ -119,9 +153,11 @@ export function ProfessionalPatientsScreen() {
         description="Toque para ver o histórico de check-ins (somente leitura)."
       >
         {patients.length === 0 ? (
-          <Typography variant="body" color={colors.textMuted}>
-            Ainda não há pacientes com vínculo ativo.
-          </Typography>
+          <View style={styles.empty}>
+            <Typography variant="body" color={colors.textMuted}>
+              Ainda não há pacientes com vínculo ativo. Envie um convite acima.
+            </Typography>
+          </View>
         ) : (
           patients.map((item) => (
             <Pressable
@@ -165,6 +201,9 @@ const styles = StyleSheet.create({
     gap: space[3],
     paddingVertical: space[6],
   },
+  empty: {
+    paddingVertical: space[2],
+  },
   rowCard: {
     backgroundColor: colors.background,
     borderRadius: radius.md,
@@ -175,5 +214,13 @@ const styles = StyleSheet.create({
   },
   rowPressed: {
     opacity: 0.85,
+    backgroundColor: colors.backgroundAccent,
+  },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: space[2],
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+    backgroundColor: colors.backgroundAccent,
   },
 });

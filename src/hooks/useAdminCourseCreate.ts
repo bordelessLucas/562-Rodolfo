@@ -1,13 +1,16 @@
 import { useCallback, useState } from 'react';
 
 import type { CourseKind } from '@/src/domain/course';
-import { MOCK_VIDEO_URL } from '@/src/data/mockCourses';
 import { useAuth } from '@/src/hooks/useAuth';
 import {
   createCourse,
   upsertLesson,
   upsertModule,
 } from '@/src/services/course.service';
+import {
+  parseExternalVideoUrl,
+  requireExternalVideoUrl,
+} from '@/src/utils/externalVideoUrl';
 
 export type AdminCoursePublishResult =
   | { ok: true; title: string; kind: CourseKind }
@@ -20,7 +23,7 @@ export function useAdminCourseCreate() {
   const [kind, setKind] = useState<CourseKind>('curso');
   const [moduleTitle, setModuleTitle] = useState('Módulo 1');
   const [lessonTitle, setLessonTitle] = useState('Aula 1');
-  const [videoUrl, setVideoUrl] = useState(MOCK_VIDEO_URL);
+  const [videoUrl, setVideoUrl] = useState('');
   const [sortOrder, setSortOrder] = useState('10');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -29,9 +32,24 @@ export function useAdminCourseCreate() {
     if (!user) {
       return { ok: false, error: 'Faça login novamente.' };
     }
+    if (!title.trim()) {
+      const message = 'Informe o título do curso.';
+      setError(message);
+      return { ok: false, error: message };
+    }
+    const videoCheck = parseExternalVideoUrl(videoUrl);
+    if (!videoCheck.ok) {
+      const message =
+        videoCheck.error ??
+        'Informe uma URL de vídeo válida (YouTube, Vimeo ou https).';
+      setError(message);
+      return { ok: false, error: message };
+    }
+
     setLoading(true);
     setError('');
     try {
+      const normalizedVideoUrl = requireExternalVideoUrl(videoUrl);
       const course = await createCourse({
         title,
         description,
@@ -58,7 +76,7 @@ export function useAdminCourseCreate() {
         description: 'Videoaula com URL externa',
         sortOrder: 1,
         contentType: 'video',
-        videoUrl,
+        videoUrl: normalizedVideoUrl,
         textBody: null,
         durationSeconds: 180,
       });

@@ -152,6 +152,20 @@ export function ProfileScreen() {
             onPress={() => router.push('/(paciente)/vinculos' as Href)}
           />
         ) : null}
+        {profile?.role === 'profissional' ? (
+          <>
+            <Button
+              label="Meus pacientes"
+              variant="outline"
+              onPress={() => router.push('/(profissional)/pacientes' as Href)}
+            />
+            <Button
+              label="Meus cursos"
+              variant="outline"
+              onPress={() => router.push('/(profissional)/cursos' as Href)}
+            />
+          </>
+        ) : null}
         <Button
           label="Sair da conta"
           variant="outline"

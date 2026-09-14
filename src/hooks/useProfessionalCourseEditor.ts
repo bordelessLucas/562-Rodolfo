@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { CourseKind, CourseStatus } from '@/src/domain/course';
 import { courseStatusLabel } from '@/src/domain/course';
-import { MOCK_VIDEO_URL } from '@/src/data/mockCourses';
 import { useAuth } from '@/src/hooks/useAuth';
 import {
   createCourse,
@@ -13,6 +12,11 @@ import {
   upsertLesson,
   upsertModule,
 } from '@/src/services/course.service';
+import {
+  EXTERNAL_VIDEO_PLACEHOLDER,
+  parseExternalVideoUrl,
+  requireExternalVideoUrl,
+} from '@/src/utils/externalVideoUrl';
 import { firstParam } from '@/src/utils/routeParams';
 
 const DEFAULT_MODULE_ID = 'mod_principal';
@@ -36,7 +40,7 @@ export function useProfessionalCourseEditor() {
   const [lessonId, setLessonId] = useState(DEFAULT_LESSON_ID);
   const [moduleTitle, setModuleTitle] = useState('Módulo 1');
   const [lessonTitle, setLessonTitle] = useState('Aula 1');
-  const [videoUrl, setVideoUrl] = useState(MOCK_VIDEO_URL);
+  const [videoUrl, setVideoUrl] = useState('');
   const [savedCourseId, setSavedCourseId] = useState<string | null>(
     isNew ? null : courseIdParam,
   );
@@ -91,18 +95,18 @@ export function useProfessionalCourseEditor() {
           if (preferredLesson) {
             setLessonId(preferredLesson.id);
             setLessonTitle(preferredLesson.title);
-            setVideoUrl(preferredLesson.videoUrl ?? MOCK_VIDEO_URL);
+            setVideoUrl(preferredLesson.videoUrl ?? '');
           } else {
             setLessonId(DEFAULT_LESSON_ID);
             setLessonTitle('Aula 1');
-            setVideoUrl(MOCK_VIDEO_URL);
+            setVideoUrl('');
           }
         } else {
           setModuleId(DEFAULT_MODULE_ID);
           setLessonId(DEFAULT_LESSON_ID);
           setModuleTitle('Módulo 1');
           setLessonTitle('Aula 1');
-          setVideoUrl(MOCK_VIDEO_URL);
+          setVideoUrl('');
         }
         setContentReady(true);
       } catch (err) {
@@ -140,11 +144,25 @@ export function useProfessionalCourseEditor() {
       setError('Aguarde o carregamento do conteúdo antes de salvar.');
       return;
     }
+    if (!title.trim()) {
+      setError('Informe o título do curso.');
+      return;
+    }
+
+    const videoCheck = parseExternalVideoUrl(videoUrl);
+    if (!videoCheck.ok) {
+      setError(
+        videoCheck.error ??
+          'Informe uma URL de vídeo válida (YouTube, Vimeo ou https).',
+      );
+      return;
+    }
 
     setLoading(true);
     setError('');
     setMessage('');
     try {
+      const normalizedVideoUrl = requireExternalVideoUrl(videoUrl);
       let id = savedCourseId;
       const createdNew = !id;
       if (!id) {
@@ -184,7 +202,7 @@ export function useProfessionalCourseEditor() {
         description: 'Videoaula com URL externa',
         sortOrder: 1,
         contentType: 'video',
-        videoUrl,
+        videoUrl: normalizedVideoUrl,
         textBody: null,
         durationSeconds: 180,
       });
@@ -227,6 +245,13 @@ export function useProfessionalCourseEditor() {
       setError('Só é possível enviar rascunhos ou cursos rejeitados.');
       return;
     }
+    const videoCheck = parseExternalVideoUrl(videoUrl);
+    if (!videoCheck.ok) {
+      setError(
+        'Salve uma URL de vídeo válida antes de enviar para aprovação.',
+      );
+      return;
+    }
     setLoading(true);
     setError('');
     setMessage('');
@@ -241,7 +266,7 @@ export function useProfessionalCourseEditor() {
     } finally {
       setLoading(false);
     }
-  }, [savedCourseId, editable]);
+  }, [savedCourseId, editable, videoUrl]);
 
   return {
     isNew,

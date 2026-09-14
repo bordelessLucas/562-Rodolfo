@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import {
   Button,
   Container,
+  ExternalVideoUrlField,
   InlineMessage,
   Input,
   ScreenHeader,
@@ -68,7 +69,7 @@ export function ProfessionalCourseEditorScreen() {
       <ScreenHeader
         eyebrow="Edição"
         title={isNew ? 'Novo curso' : 'Editar curso'}
-        subtitle={`Status: ${statusLabel}. Nesta fase você edita um módulo e uma aula.`}
+        subtitle={`Status: ${statusLabel}. Um módulo e uma aula com link externo de vídeo.`}
         onBack={goBack}
         backLabel="Meus cursos"
       />
@@ -140,11 +141,9 @@ export function ProfessionalCourseEditorScreen() {
         onChangeText={setLessonTitle}
         editable={!fieldsDisabled}
       />
-      <Input
-        label="URL do vídeo (demonstração)"
+      <ExternalVideoUrlField
         value={videoUrl}
         onChangeText={setVideoUrl}
-        autoCapitalize="none"
         editable={!fieldsDisabled}
       />
 

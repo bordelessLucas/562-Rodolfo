@@ -1,6 +1,6 @@
 # Andamento do Projeto — Backend × Frontend
 
-> Documento vivo. Atualizado em **10/09/2026** (comunidades v2: hub, posts ricos, privacidade).  
+> Documento vivo. Atualizado em **14/09/2026** (padrão vídeo externo + UI pass profissional A–D).  
 > **Não redefine escopo** — só registra o que já foi feito e o que ainda falta.
 
 ---
@@ -9,14 +9,14 @@
 
 | Camada | Progresso estimado | Situação |
 |--------|-------------------|----------|
-| **Frontend** | ~86% | + Comunidades v2 (hub/feed/posts) |
+| **Frontend** | ~88% | + UI pass profissional + vídeo externo |
 | **Backend** | ~82% | + policies, likes, replies, memberships CG |
 | **Diário / Check-in** | Spec ✅ · MVP ✅ | Form + histórico + filtros na mesma tab |
-| **Cursos / mentoria** | Spec ✅ · Base ✅ | URLs mock; sem Storage |
+| **Cursos / mentoria** | Spec ✅ · Base ✅ | **Padrão `videoUrl` externo** (YouTube/https) |
 | **Conteúdo singular** | Base ✅ | Notícias / pesquisas / artigos |
-| **Comunidade** | Spec ✅ · **v2+** | Hub, posts sociais, policies, **entrada com aprovação** |
+| **Comunidade** | Spec ✅ · **v2+** | Hub, posts sociais, policies, entrada com aprovação |
 | **Diagnóstico inicial** | Spec ✅ · Código 0% | Aguarda fase R3 |
-| **Área profissional** | Shell ✅ · vínculos ✅ · cursos ✅ · solicitar comunidade ✅ | |
+| **Área profissional** | Shell ✅ · vínculos ✅ · cursos ✅ · comunidade ✅ · **UI pass** ✅ | |
 
 ---
 
@@ -26,11 +26,14 @@
 
 ### Fila técnica sugerida
 - [x] UI vínculos profissional ↔ paciente (back já pronto)
+- [x] Padrão de mídia externa (`docs-ia/padrao_midia_externa.md`)
+- [x] UI pass área profissional (home com resumo, empty states, validação)
+- [ ] **Validação E2E** vínculos + cursos + comunidade no dispositivo (`auditoria_profissional_e2e.md`)
 - [ ] **R3** Diagnóstico inicial *(gate: campos oficiais)*
-- [ ] **R4** Biblioteca avulsa de vídeos *(gate: hospedagem)* — cursos já usam `videoUrl` mock
-- [x] **R6** Comunidade base + **v2** (hub, posts ricos, privacidade) — denúncia/Storage TBD
+- [ ] **R4** Biblioteca avulsa de vídeos *(mesmo padrão de URL externa quando sair do gate)*
+- [x] **R6** Comunidade base + **v2** — denúncia/Storage TBD
 - [ ] **R7** Monetização do diário *(gate: modelo)*
-- [ ] **R8** features extras do profissional *(gate cliente)*
+- [ ] **R8** features clínicas extras do profissional *(gate cliente — chat/prontuário fora)*
 - [ ] **R9** Voz / tendências / IA *(gate IA)*
 - [ ] **R10** Integração / release / LGPD
 
@@ -38,7 +41,8 @@
 - Modelo de monetização do diário
 - Campos oficiais do diagnóstico inicial
 - Features concretas extras da área profissional
-- Hospedagem definitiva de vídeo (Storage/YouTube/Vimeo), moderação, unidades, insights IA, LGPD
+- Hospedagem definitiva de vídeo (**padrão atual = URL externa**; Storage depois)
+- Moderação, unidades, insights IA, LGPD
 
 ---
 
@@ -48,13 +52,13 @@
 |-------|------|--------|
 | 1. Estrutura plataforma | ✅ | ✅ parcial (shells ok) |
 | 2. Cadastro e perfil | ✅ | ✅ (+ role admin manual) |
-| 3. Cursos/mentoria | ✅ | ✅ base (catálogo, módulos, aulas, progresso, aprovação) |
-| 4. Vídeos pacientes (biblioteca) | ✅ | ❌ (só aulas em curso) |
+| 3. Cursos/mentoria | ✅ | ✅ base + validação URL externa |
+| 4. Vídeos pacientes (biblioteca) | ✅ | ❌ (só aulas em curso; padrão URL pronto) |
 | 5. Diagnóstico inicial | ✅ | ❌ |
-| 6. Comunidade | ✅ | ✅ **v2** (hub, capa, posts, like, replies, policies) |
+| 6. Comunidade | ✅ | ✅ **v2** |
 | 7. Integração | ✅ | Parcial |
 | Diário + monetização | ✅ | Diário MVP ✅ · paywall ❌ |
-| Área profissional | ✅ existência | Back + **UI vínculos** ✅ · submissão de cursos ✅ · extras TBD |
+| Área profissional | ✅ existência | Vínculos + cursos + comunidade + **UI pass 14/09** |
 
 ---
 
@@ -66,20 +70,15 @@
 
 ---
 
-## FRONTEND ✅ recente
-- Paciente: **Início** (CTA check-in, semana Seg–Dom, continuar curso/sugestão)
-- Paciente: Explorar com **busca + chips** (cursos, mentorias, notícias, pesquisas, artigos)
-- Paciente: detalhe de artigo; catálogo de cursos com busca/filtros
-- Paciente: Perfil → **Profissionais vinculados**
-- Profissional: Meus cursos / criar / enviar aprovação · **Meus pacientes**
-- Admin: seed, publicar curso/artigo, fila aprovar/rejeitar (+ histórico do submetente em comunidades)
-- Shell `/(admin)`
+## FRONTEND ✅ recente (14/09/2026)
+- Padrão vídeo externo: `externalVideoUrl` + `ExternalVideoPanel` / `ExternalVideoUrlField`
+- LessonScreen: CTA por provedor (YouTube/Vimeo/externo) + thumbnail YouTube
+- Profissional: home com contadores; pacientes/cursos/comunidades polidos
+- Validação de URL no editor pro e no admin create
 
 ---
 
 ## Ordem (roadmap)
 
-Ver `plano_roadmap.md` e `plano_cursos.md`.  
-**R5 base de cursos:** ✅  
-**UI vínculos (Sprint 9):** ✅  
-**Fila sugerida:** R3 Diagnóstico **ou** R4 biblioteca (ambos com gate) · validação E2E vínculos no Expo Go.
+Ver `plano_roadmap.md`, `plano_cursos.md` e `padrao_midia_externa.md`.  
+**Próximo passo operacional:** rodar checklist em `auditoria_profissional_e2e.md`.

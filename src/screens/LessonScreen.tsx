@@ -1,4 +1,3 @@
-import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -6,6 +5,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import {
   Button,
   Container,
+  ExternalVideoPanel,
   InlineMessage,
   ScreenHeader,
   Typography,
@@ -45,13 +45,6 @@ export function LessonScreen() {
     lessonId,
     userId: user?.uid,
   });
-
-  const openVideo = async () => {
-    if (!lesson?.videoUrl) {
-      return;
-    }
-    await Linking.openURL(lesson.videoUrl);
-  };
 
   const goBackToCourse = () => {
     if (courseId) {
@@ -134,23 +127,7 @@ export function LessonScreen() {
       ) : null}
 
       {lesson.contentType === 'video' ? (
-        <View style={styles.panel}>
-          <Typography variant="body" color={colors.textMuted}>
-            O vídeo abre fora do app (navegador ou player do sistema). Quando
-            terminar, volte aqui para marcar a aula como concluída.
-          </Typography>
-          <Button
-            label="Abrir videoaula no app externo"
-            onPress={openVideo}
-            disabled={!lesson.videoUrl}
-          />
-          {!lesson.videoUrl ? (
-            <InlineMessage
-              message="URL de vídeo indisponível para esta aula."
-              variant="info"
-            />
-          ) : null}
-        </View>
+        <ExternalVideoPanel videoUrl={lesson.videoUrl} />
       ) : (
         <View style={styles.panel}>
           <Typography variant="body">

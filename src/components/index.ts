@@ -45,3 +45,9 @@ export { PostCard } from './PostCard';
 export { SocialFeedPost } from './SocialFeedPost';
 export { CommentThread } from './CommentThread';
 export { CheckinFormModal } from './CheckinFormModal';
+
+export { ExternalVideoPanel } from './ExternalVideoPanel';
+export type { ExternalVideoPanelProps } from './ExternalVideoPanel';
+
+export { ExternalVideoUrlField } from './ExternalVideoUrlField';
+export type { ExternalVideoUrlFieldProps } from './ExternalVideoUrlField';

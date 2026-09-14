@@ -11,7 +11,8 @@ import type {
 
 /**
  * Dados mock para seed e fallback local (URLs públicas — sem Firebase Storage).
- * Vídeo placeholder: Big Buck Bunny (domínio público).
+ * Padrão de produto: `videoUrl` externa (YouTube/Vimeo/https). Ver `docs-ia/padrao_midia_externa.md`.
+ * Placeholder de demonstração: Big Buck Bunny (domínio público).
  */
 export const MOCK_VIDEO_URL =
   'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';

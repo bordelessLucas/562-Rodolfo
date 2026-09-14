@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 
 import {
   Button,
@@ -22,7 +22,12 @@ type Props = {
 function summarizeCheckin(item: {
   wellbeing: {
     pain: number | null;
+    heaviness: number | null;
     energy: number | null;
+    mood: number | null;
+  };
+  measurements: {
+    weight: number | null;
   };
   treatments: string[];
   notes: string;
@@ -31,8 +36,17 @@ function summarizeCheckin(item: {
   if (item.wellbeing.pain !== null) {
     parts.push(`Dor ${item.wellbeing.pain}`);
   }
+  if (item.wellbeing.heaviness !== null) {
+    parts.push(`Peso/sensação ${item.wellbeing.heaviness}`);
+  }
   if (item.wellbeing.energy !== null) {
     parts.push(`Energia ${item.wellbeing.energy}`);
+  }
+  if (item.wellbeing.mood !== null) {
+    parts.push(`Humor ${item.wellbeing.mood}`);
+  }
+  if (item.measurements.weight !== null) {
+    parts.push(`${item.measurements.weight} kg`);
   }
   if (item.treatments.length > 0) {
     parts.push(`${item.treatments.length} tratamento(s)`);
@@ -57,6 +71,26 @@ export function ProfessionalPatientDetailScreen({ patientId }: Props) {
     endLink,
   } = useLinkedPatientDetail(user?.uid, patientId);
 
+  const confirmEndLink = () => {
+    Alert.alert(
+      'Encerrar vínculo',
+      'O paciente deixará de aparecer na sua lista e você não verá mais os check-ins. Continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Encerrar',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              await endLink();
+              router.back();
+            })();
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <Container
       edges={['top', 'left', 'right']}
@@ -66,7 +100,7 @@ export function ProfessionalPatientDetailScreen({ patientId }: Props) {
       <ScreenHeader
         eyebrow="Paciente"
         title={patient?.name ?? 'Detalhe do paciente'}
-        subtitle="Check-ins em somente leitura. Você não pode editar o diário do paciente."
+        subtitle="Check-ins em somente leitura. Você não pode editar o diário."
         onBack={() => router.back()}
         backLabel="Pacientes"
       />
@@ -85,11 +119,19 @@ export function ProfessionalPatientDetailScreen({ patientId }: Props) {
 
       {!loading && patient ? (
         <>
-          <SectionCard title="Dados básicos">
-            <Typography variant="body">{patient.name}</Typography>
+          <SectionCard
+            title="Dados básicos"
+            description="Informações do perfil vinculado."
+          >
+            <Typography variant="bodyStrong">{patient.name}</Typography>
             <Typography variant="body" color={colors.textMuted}>
               {patient.email}
             </Typography>
+            <View style={styles.roBadge}>
+              <Typography variant="caption" color={colors.primary}>
+                Somente leitura
+              </Typography>
+            </View>
           </SectionCard>
 
           <SectionCard
@@ -124,7 +166,7 @@ export function ProfessionalPatientDetailScreen({ patientId }: Props) {
             label="Encerrar vínculo"
             variant="outline"
             loading={acting}
-            onPress={() => void endLink()}
+            onPress={confirmEndLink}
           />
         </>
       ) : null}
@@ -156,5 +198,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: space[4],
     gap: space[2],
+  },
+  roBadge: {
+    alignSelf: 'flex-start',
+    marginTop: space[1],
+    paddingHorizontal: space[2],
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+    backgroundColor: colors.backgroundAccent,
   },
 });

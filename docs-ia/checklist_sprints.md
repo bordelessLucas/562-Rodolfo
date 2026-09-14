@@ -75,7 +75,7 @@
 
 ## Sprint 6 — Conteúdos e vídeos → Fase R4
 - [ ] Biblioteca avulsa por tema, player, orientação
-- [x] Padrão de `videoUrl` mock validado dentro de aulas de curso (R5)
+- [x] Padrão de `videoUrl` **externo** (YouTube/Vimeo/https) em aulas de curso — ver `padrao_midia_externa.md`
 
 ---
 
@@ -88,8 +88,9 @@
 - [x] Home paciente: CTA check-in + semana 7 dias + continuar/sugerir
 - [x] Explorar: busca por nome + filtros (curso/mentoria/notícia/pesquisa/artigo)
 - [x] Conteúdo singular: `contentArticles` (notícia/pesquisa/artigo) + admin publicar
+- [x] Validação de URL externa no editor pro + admin + LessonScreen
 - [ ] Paywall de curso (TBD no escopo)
-- [ ] Upload Storage (quando houver bucket)
+- [ ] Upload Storage (quando houver bucket) — padrão atual é link externo
 
 ---
 
@@ -97,6 +98,7 @@
 - [x] Model `communities` + members + posts + comments
 - [x] Admin cria/publica; profissional solicita; paciente entra e interage
 - [x] Tab Comunidade (substitui Histórico na bottom bar)
+- [x] UI solicitação profissional (status / empty / Input DS)
 - [ ] Moderação / denúncia / regras sensíveis (TBD)
 
 ---
@@ -106,8 +108,10 @@
 - [x] Rules + indexes deployados (leitura de pacientes/check-ins só com vínculo active)
 - [x] UI profissional: convidar, listar pacientes, ver check-ins
 - [x] UI paciente: aceitar / recusar / revogar convites
-- [ ] Demais features após levantamento com o cliente
-
+- [x] UI pass: home com resumo, empty states, confirmação ao encerrar vínculo
+- [x] Checklist E2E documentado (`auditoria_profissional_e2e.md`)
+- [ ] Executar E2E no dispositivo e marcar itens
+- [ ] Demais features clínicas após levantamento com o cliente
 ---
 
 ## Sprint 10 — Monetização do diário → Fase R7

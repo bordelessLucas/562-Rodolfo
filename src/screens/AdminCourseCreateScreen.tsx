@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import {
   Button,
   Container,
+  ExternalVideoUrlField,
   InlineMessage,
   Input,
   ScreenHeader,
@@ -67,7 +68,7 @@ export function AdminCourseCreateScreen() {
       <ScreenHeader
         eyebrow="Publicação"
         title="Novo curso"
-        subtitle="Crie e publique diretamente para o catálogo de pacientes."
+        subtitle="Publique com link externo de vídeo (YouTube / Vimeo / https)."
         onBack={() => router.replace('/(admin)' as Href)}
         backLabel="Início"
       />
@@ -114,11 +115,9 @@ export function AdminCourseCreateScreen() {
         value={lessonTitle}
         onChangeText={setLessonTitle}
       />
-      <Input
-        label="URL do vídeo (demonstração)"
+      <ExternalVideoUrlField
         value={videoUrl}
         onChangeText={setVideoUrl}
-        autoCapitalize="none"
       />
 
       <Button
